@@ -29,7 +29,8 @@
     {
       "id": "yf",
       "name": "张宇帆",
-      "short": "YF"
+      "short": "YF",
+      "inactive": true
     }
   ],
   "methods": [
