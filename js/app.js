@@ -10,6 +10,7 @@ const $view = document.getElementById('view');
 const MEALS = ['早餐', '午餐', '晚餐', '夜宵', '其他']; // 存的是中文，显示时翻译
 const PALETTE = ['#d9480f', '#1c7ed6', '#2b8a3e', '#9c36b5', '#e67700', '#0b7285', '#c2255c', '#5c940d', '#6741d9', '#a61e4d'];
 const FORM_VIEWS = new Set(['add', 'edit', 'pay']);
+const THEMES = [['material', 'Google 简约（默认）'], ['ios', 'iOS 原生'], ['mint', '清爽薄荷绿'], ['night', '深色金融'], ['play', '活泼圆润'], ['warm', '暖橙（原版）']];
 
 const prefs = Object.assign(
   { balMode: 'split', balAlgo: 'pair', balScope: 'all', statsRange: 'all', statsMode: 'split', statsFrom: '', statsTo: '', billType: 'all', billPerson: '' },
@@ -213,6 +214,11 @@ const ACTIONS = {
   },
   setMe: (id) => { S.saveConfig({ me: id }); toast(t('已设定：我是 {name}', { name: mem(id).name })); render(); },
   setLang: (l) => switchLang(l),
+  setTheme: (th) => {
+    try { localStorage.setItem('fz.theme', th); } catch { /* ignore */ }
+    document.documentElement.dataset.theme = th;
+    render();
+  },
   refresh: () => { if (S.state.pending && S.state.mode === 'github') S.flush(); else S.refresh(); },
   editMember: (id) => editMember(id),
   addMember: () => editMember(null),
@@ -955,6 +961,10 @@ function renderSettings() {
     ${syncErrorNote()}
     <section class="card"><h3>${t('语言 / Language')}</h3>
       <div class="chips pad"><button class="chip-btn ${getLang() === 'zh' ? 'on' : ''}" data-act="setLang" data-arg="zh">中文</button><button class="chip-btn ${getLang() === 'en' ? 'on' : ''}" data-act="setLang" data-arg="en">English</button></div>
+    </section>
+
+    <section class="card"><h3>${t('风格')} <small class="muted">${t('（只保存在这台设备）')}</small></h3>
+      <div class="chips pad">${THEMES.map(([id, label]) => `<button class="chip-btn ${document.documentElement.dataset.theme === id ? 'on' : ''}" data-act="setTheme" data-arg="${id}">${t(label)}</button>`).join('')}</div>
     </section>
 
     <section class="card"><h3>${t('我是谁')} <small class="muted">${t('（只保存在这台设备）')}</small></h3>

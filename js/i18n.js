@@ -252,6 +252,13 @@ const EN = {
   // ---- 设置 ----
   '语言 / Language': '语言 / Language',
   '我是谁': 'Who am I',
+  '风格': 'Style',
+  'Google 简约（默认）': 'Google simple (default)',
+  'iOS 原生': 'iOS native',
+  '清爽薄荷绿': 'Fresh mint',
+  '深色金融': 'Dark fintech',
+  '活泼圆润': 'Playful',
+  '暖橙（原版）': 'Warm orange (original)',
   '（只保存在这台设备）': '(saved on this device only)',
   '先添加成员': 'Add members first',
   '成员': 'Members',
