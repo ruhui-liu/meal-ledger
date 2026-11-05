@@ -4,7 +4,7 @@
 // - 本地模式：不在 github.io 上（比如本机测试），数据存在浏览器里
 import { b64encode, b64decode, readLS, writeLS, clone, nowISO } from './util.js';
 
-const LS = { cfg: 'fz.config', cache: 'fz.cache', pending: 'fz.pending', local: 'fz.local' };
+const LS = { cfg: 'fz.config', cache: 'fz.cache', pending: 'fz.pending', local: 'fz.local', rates: 'fz.unionpay' };
 export const DEFAULT_METHODS = ['现金', '刷卡', '支付宝', '微信支付', 'PayPay', '其他'];
 
 export const emptyData = () => ({ version: 1, members: [], methods: [...DEFAULT_METHODS], bills: [], payments: [] });
@@ -33,6 +33,7 @@ export const state = {
   lastSync: null,
   loaded: false,
   pending: pending.length,
+  rates: readLS(LS.rates, {}) || {}, // 银联汇率表 { 'YYYY-MM-DD': 1円兑多少元 }
 };
 
 const subs = new Set();
@@ -164,6 +165,16 @@ export async function testConnection(c = getConfig()) {
   }
 }
 
+// 汇率表和账本放在同一个目录：data/rates.json
+const ratesPath = (c) => c.path.replace(/[^/]*$/, '') + 'rates.json';
+function setRates(doc) {
+  const r = doc && doc.rates;
+  if (r && typeof r === 'object' && Object.keys(r).length) {
+    state.rates = r;
+    writeLS(LS.rates, r);
+  }
+}
+
 // ---------- 读取 / 保存 ----------
 export async function init() {
   state.mode = computeMode();
@@ -181,6 +192,10 @@ export async function refresh() {
   state.mode = computeMode();
   const c = getConfig();
   if (state.mode === 'local') {
+    try {
+      const res = await fetch('./data/rates.json', { cache: 'no-store' });
+      if (res.ok) setRates(await res.json());
+    } catch { /* 用缓存 */ }
     let d = readLS(LS.local, null);
     if (!d) {
       try {
@@ -203,7 +218,8 @@ export async function refresh() {
   state.status = 'loading';
   emit();
   try {
-    const r = await ghGet(c);
+    const [r, rr] = await Promise.all([ghGet(c), ghGet({ ...c, path: ratesPath(c) }).catch(() => null)]);
+    if (rr && rr.data) setRates(rr.data);
     base = normalize(r.data || emptyData());
     sha = r.sha;
     writeLS(LS.cache, base);

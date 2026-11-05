@@ -1,6 +1,5 @@
 import * as S from './store.js';
 import * as C from './calc.js';
-import { getRate } from './rates.js';
 import {
   CUR, CURS, esc, uid, today, nowISO, fmtDate, fmtDateShort, weekday, monthKey, fmtMonth,
   roundCur, isZero, num, money, moneyText, parseNum, readLS, writeLS, clone,
@@ -130,6 +129,7 @@ function render(parts = parseHash().parts, params = parseHash().params) {
 }
 let wasLoaded = S.state.loaded;
 S.subscribe(() => {
+  C.setRateTable(S.state.rates);
   renderSync();
   const justLoaded = !wasLoaded && S.state.loaded;
   wasLoaded = S.state.loaded;
@@ -239,8 +239,18 @@ function groupDebts(list) {
   return [...m.values()];
 }
 function refRate() {
-  const r = [...D().bills].filter((b) => b.rate > 0).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
-  return r ? r.rate : 0.047;
+  return C.rateOf({ date: today() }, D());
+}
+/** 账目详情里显示的汇率说明 */
+function rateDesc(rec) {
+  const r = C.rateOf(rec, D());
+  let src;
+  if (rec.rateSource === 'manual' && rec.rate > 0) src = '手动填写';
+  else {
+    const info = C.rateInfo(rec.date);
+    src = info ? (info.exact ? `银联 ${info.date}` : `暂用银联 ${info.date} 的汇率（当天的还没发布，发布后自动更新）`) : '（汇率表缺失，估算）';
+  }
+  return `100円 = ${(r * 100).toFixed(4)}元 <small class="muted">${esc(src)}</small>`;
 }
 const magnitude = (a, rr) => (a.JPY || 0) * rr + (a.CNY || 0);
 const sumAmts = (rows) => rows.reduce((s, r) => { for (const [c, v] of Object.entries(r.amts)) s[c] = (s[c] || 0) + v; return s; }, {});
@@ -320,7 +330,7 @@ function renderBalances() {
     <section class="card"><h3>每个人的净额</h3>${netRows}</section>
     <p class="foot">${mode === 'split'
       ? '日元和人民币分开计算，互不抵消。'
-      : `所有金额按<b>每笔账消费当天的汇率</b>（欧洲央行参考汇率）换算成${CUR[mode].name}后再汇总。`}
+      : `所有金额按<b>每笔账消费当天的汇率</b>（银联当日汇率）换算成${CUR[mode].name}后再汇总。`}
       ${algo === 'simple' ? '「最少转账」只看每个人的净额重新配对，转账次数最少，但收款人可能不是当初付钱的人。' : '「两两抵消」：两个人之间互相欠的钱先抵消，只剩一个方向。'}
       点一行可以看这两个人之间的明细。</p>`;
 }
@@ -439,7 +449,7 @@ function openBill(id) {
       <dt>付款人</dt><dd>${av(b.payer, 'xs')} ${nm(b.payer)}</dd>
       <dt>支付方式</dt><dd>${esc(b.method || '未记录')}</dd>
       <dt>分账方式</dt><dd>${modeTxt}${b.split.mode === 'amount' ? '（没指定完的部分平均分）' : ''}</dd>
-      <dt>汇率</dt><dd>100円 = ${(rate * 100).toFixed(4)}元 <small class="muted">${b.rate > 0 ? (b.rateSource === 'manual' ? '手动填写' : `${esc(b.rateSource || '')} ${esc(b.rateDate || '')}`) : '（缺失，按最近日期估算）'}</small></dd>
+      <dt>汇率</dt><dd>${rateDesc(b)}</dd>
     </dl>
     <h3>${b.split.members.length} 人分摊${payerIn ? '' : '（付款人没有参与）'}</h3>
     <div class="shares">${rows}</div>
@@ -463,7 +473,7 @@ function openPayment(id) {
     <dl class="kv">
       <dt>支付方式</dt><dd>${esc(p.method || '未记录')}</dd>
       <dt>抵扣</dt><dd>${cr.cur === p.currency ? `抵扣${CUR[p.currency].name}欠款` : `换算后抵扣 ${money(cr.amt, cr.cur)} ${CUR[cr.cur].name}欠款`}</dd>
-      <dt>汇率</dt><dd>100円 = ${(rate * 100).toFixed(4)}元 <small class="muted">${p.rate > 0 ? (p.rateSource === 'manual' ? '手动填写' : `${esc(p.rateSource || '')} ${esc(p.rateDate || '')}`) : '（缺失，按最近日期估算）'}</small></dd>
+      <dt>汇率</dt><dd>${rateDesc(p)}</dd>
     </dl>
     ${p.note ? `<p class="note">${esc(p.note)}</p>` : ''}
     <p class="muted small">${p.createdBy ? `由 ${esc(mem(p.createdBy).name)} 记录 · ` : ''}${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</p>
@@ -480,24 +490,33 @@ function formTabs(active) {
   return `<div class="seg form-tabs"><a href="#/add" class="${active === 'bill' ? 'on' : ''}">消费</a><a href="#/pay" class="${active === 'pay' ? 'on' : ''}">还款 / 转账</a></div>`;
 }
 
-function rateMainHtml(f, st) {
-  let main;
-  if (st === 'loading') main = '<span class="muted">正在获取汇率…</span>';
-  else if (f.rate > 0) {
-    main = `<span>100円 = <b>${(f.rate * 100).toFixed(4)}</b>元</span><span class="muted">1元 ≈ ${(1 / f.rate).toFixed(2)}円</span>
-      <small class="muted">${f.rateSource === 'manual' ? '手动填写' : `${esc(f.rateSource || '')} · ${f.rateDate === f.date ? '当天' : esc(f.rateDate || '')}${f.rateDate && f.rateDate !== f.date ? '（最近交易日）' : ''}`}</small>`;
-  } else main = '<span class="err">没取到汇率，可以手动填写（不填也能保存，换算时用最近日期的汇率）</span>';
-  return main;
+// 表单里的汇率：手动填写优先，否则按日期查银联汇率表
+const isManual = (f) => f.rateSource === 'manual' && f.rate > 0;
+const formRate = (f) => (isManual(f) ? f.rate : C.rateOf({ date: f.date }, D()));
+function rateMainHtml(f) {
+  const r = formRate(f);
+  let src;
+  if (isManual(f)) src = '手动填写';
+  else {
+    const info = C.rateInfo(f.date);
+    src = !info ? '<span class="err">没有汇率数据，可以手动填写</span>'
+      : info.exact ? `银联 · ${info.date === today() ? '今天' : info.date}`
+      : `暂用银联 ${info.date} 的汇率（${esc(f.date)} 的还没发布，发布后会自动换成当天的）`;
+  }
+  return `<span>100円 = <b>${(r * 100).toFixed(4)}</b>元</span><span class="muted">1元 ≈ ${(1 / r).toFixed(2)}円</span><small class="muted">${src}</small>`;
 }
-const rateBtnsHtml = (f) => `<button type="button" class="link" data-f="editRate">手动修改</button>${f.rateSource === 'manual' ? '<button type="button" class="link" data-f="autoRate">恢复自动</button>' : ''}`;
-function rateBoxHtml(f, st, editing) {
-  return `<div class="rate-main">${rateMainHtml(f, st)}</div><div class="rate-btns">${rateBtnsHtml(f)}</div>
-    <div class="rate-edit" ${editing ? '' : 'hidden'}>100円 = <input name="rateManual" inputmode="decimal" value="${f.rate > 0 ? (f.rate * 100).toFixed(4) : ''}"> 元</div>`;
+const rateBtnsHtml = (f) => `<button type="button" class="link" data-f="editRate">手动修改</button>${isManual(f) ? '<button type="button" class="link" data-f="autoRate">恢复银联汇率</button>' : ''}`;
+function rateBoxHtml(f, editing) {
+  return `<div class="rate-main">${rateMainHtml(f)}</div><div class="rate-btns">${rateBtnsHtml(f)}</div>
+    <div class="rate-edit" ${editing ? '' : 'hidden'}>100円 = <input name="rateManual" inputmode="decimal" value="${(formRate(f) * 100).toFixed(4)}"> 元</div>`;
 }
 function updateRateText(form, f) {
-  form.querySelector('.rate-main').innerHTML = rateMainHtml(f, 'ok');
+  form.querySelector('.rate-main').innerHTML = rateMainHtml(f);
   form.querySelector('.rate-btns').innerHTML = rateBtnsHtml(f);
 }
+const rateFields = (f) => (isManual(f) ? { rate: f.rate, rateSource: 'manual' } : {});
+const addMemberBtn = (where) => (S.canWrite() ? `<button type="button" class="chip-add" data-f="addMember" data-where="${where}">＋ 新成员</button>` : '');
+const withAdd = (chipsHtml, where) => chipsHtml.replace(/<\/div>$/, addMemberBtn(where) + '</div>');
 
 function renderBillForm(editId, params = {}) {
   const d = D(), me = myId();
@@ -507,14 +526,15 @@ function renderBillForm(editId, params = {}) {
   const lastMembers = (prefs.lastMembers || active).filter((id) => active.includes(id));
   const f = src
     ? { ...clone(src), split: { mode: src.split.mode || 'equal', members: [...src.split.members], values: Object.fromEntries(Object.entries(src.split.values || {}).map(([k, v]) => [k, String(v)])) }, amount: String(src.amount) }
-    : { kind: 'meal', date: today(), meal: guessMeal(), title: '', currency: prefs.lastCur || 'JPY', amount: '', payer: me || '', method: '', split: { mode: 'equal', members: lastMembers.length ? lastMembers : active, values: {} }, rate: null, rateDate: null, rateSource: null, note: '' };
+    : { kind: 'meal', date: today(), meal: guessMeal(), title: '', currency: prefs.lastCur || 'JPY', amount: '', payer: me || '', method: '', split: { mode: 'equal', members: lastMembers.length ? lastMembers : active, values: {} }, note: '' };
   if (!editId && src) { // 复制为新账
-    Object.assign(f, { id: undefined, date: today(), kind: 'meal', createdAt: undefined, createdBy: undefined, rate: null, rateDate: null, rateSource: null });
+    Object.assign(f, { id: undefined, date: today(), kind: 'meal', createdAt: undefined, createdBy: undefined });
   }
+  if (!isManual(f)) Object.assign(f, { rate: null, rateSource: null });
+  delete f.rateDate;
   const shownIds = [...new Set([...active, ...f.split.members, f.payer].filter(Boolean))];
   const titles = [...new Set(d.bills.filter((b) => b.kind !== 'carry').sort((a, b) => (a.date < b.date ? 1 : -1)).map((b) => b.title).filter(Boolean))].slice(0, 40);
   const methods = [...new Set([...d.methods, f.method].filter(Boolean))];
-  let rateState = f.rate > 0 ? 'ok' : 'loading';
   let rateEditing = false;
 
   $view.innerHTML = `
@@ -533,17 +553,17 @@ function renderBillForm(editId, params = {}) {
           <div class="amount-wrap"><input name="amount" class="amount-input" inputmode="decimal" value="${esc(f.amount)}" placeholder="0"><span class="unit" id="unit">${CUR[f.currency].unit}</span></div></div>
         <div class="hint" id="amountHint"></div>
       </div>
-      <div class="field"><span class="lbl">谁付的钱</span>${chips('payer', memberOpts(shownIds), f.payer)}</div>
+      <div class="field"><span class="lbl">谁付的钱</span><div id="payerBox">${withAdd(chips('payer', memberOpts(shownIds), f.payer), 'payer')}</div></div>
       <div class="field"><span class="lbl">支付方式</span>${chips('method', methods.map((m) => [m, esc(m)]), f.method, { toggle: true })}</div>
       <div class="field"><div class="lbl-row"><span class="lbl">${f.kind === 'carry' ? '欠款人' : '谁一起吃'} <b id="pc"></b></span>
         <span><button type="button" class="link" data-f="all">全选</button><button type="button" class="link" data-f="none">清空</button></span></div>
-        ${chips('members', memberOpts(shownIds), f.split.members, { type: 'checkbox' })}</div>
+        <div id="membersBox">${withAdd(chips('members', memberOpts(shownIds), f.split.members, { type: 'checkbox' }), 'members')}</div></div>
       <div class="field"><span class="lbl">怎么分</span>
         ${seg('splitMode', [['equal', '平均分'], ['amount', '指定金额'], ['ratio', '按比例']], f.split.mode)}
         <div class="hint" id="splitHint"></div>
         <div id="splitRows" class="split-rows"></div>
       </div>
-      <div class="field"><span class="lbl">汇率（按消费日，用于换算）</span><div class="rate-box" id="rateBox"></div></div>
+      <div class="field"><span class="lbl">汇率（按消费日的银联汇率，用于换算）</span><div class="rate-box" id="rateBox"></div></div>
       <label class="field"><span class="lbl">备注</span><textarea name="note" rows="2" placeholder="可选">${esc(f.note || '')}</textarea></label>
       <div class="form-actions"><button type="submit" class="btn primary block" ${S.canWrite() ? '' : 'disabled'}>${editId ? '保存修改' : '保存'}</button>
         ${editId ? `<a class="btn block" href="#/bills">取消</a>` : ''}</div>
@@ -573,7 +593,7 @@ function renderBillForm(editId, params = {}) {
       id: f.id, kind: f.kind || 'meal', date: f.date, meal: f.meal, title: f.title, currency: f.currency, amount: parseNum(f.amount),
       payer: f.payer, method: f.method,
       split: { mode: f.split.mode, members: [...f.split.members], ...(f.split.mode !== 'equal' ? { values } : {}) },
-      rate: f.rate > 0 ? f.rate : null, rateDate: f.rateDate || null, rateSource: f.rateSource || null, note: f.note,
+      ...rateFields(f), note: f.note,
       createdAt: f.createdAt, createdBy: f.createdBy,
     };
   }
@@ -598,7 +618,7 @@ function renderBillForm(editId, params = {}) {
     const other = cur === 'JPY' ? 'CNY' : 'JPY';
     const ah = $('#amountHint');
     if (String(f.amount).trim() && !okAmt) ah.innerHTML = '<span class="err">金额格式不对</span>';
-    else if (okAmt) ah.innerHTML = `${/[+\-*/]/.test(f.amount) ? `= ${money(bill.amount, cur)} · ` : ''}≈ ${moneyText(C.convert(bill.amount, cur, other, f.rate || refRate()), other)}`;
+    else if (okAmt) ah.innerHTML = `${/[+\-*/]/.test(f.amount) ? `= ${money(bill.amount, cur)} · ` : ''}≈ ${moneyText(C.convert(bill.amount, cur, other, formRate(f)), other)}`;
     else ah.innerHTML = '可以直接输入算式，例如 <code>3200+2880</code>';
     const n = f.split.members.length;
     const hint = $('#splitHint');
@@ -612,34 +632,24 @@ function renderBillForm(editId, params = {}) {
         : isZero(rem, cur) ? `已指定 ${moneyText(sum, cur)}，正好等于总额` : `已指定 ${moneyText(sum, cur)}，剩下 ${moneyText(rem, cur)} 由 ${n} 人平均分（每人 +${moneyText(rem / n, cur)}）`;
     } else hint.innerHTML = '填每个人的比例或各自点单的价格，总额按比例分摊（适合用人民币刷卡、按日元菜价分的情况）';
   }
-  let rateSeq = 0;
-  async function loadRate(force) {
-    if (f.rateSource === 'manual' && !force) return;
-    if (!f.date) return;
-    const seq = ++rateSeq;
-    rateState = 'loading';
-    renderRate();
-    try {
-      const r = await getRate(f.date);
-      if (seq !== rateSeq) return;
-      Object.assign(f, { rate: r.rate, rateDate: r.date, rateSource: r.source });
-      rateState = 'ok';
-    } catch {
-      if (seq !== rateSeq) return;
-      Object.assign(f, { rate: null, rateDate: null, rateSource: null });
-      rateState = 'error';
-    }
-    renderRate();
-    updateShares();
+  function renderRate() { $('#rateBox').innerHTML = rateBoxHtml(f, rateEditing); }
+  function addMemberHere(where) {
+    editMember(null, (m) => {
+      shownIds.push(m.id);
+      if (where === 'payer') f.payer = m.id;
+      if (!f.split.members.includes(m.id)) f.split.members.push(m.id);
+      $('#payerBox').innerHTML = withAdd(chips('payer', memberOpts(shownIds), f.payer), 'payer');
+      $('#membersBox').innerHTML = withAdd(chips('members', memberOpts(shownIds), f.split.members, { type: 'checkbox' }), 'members');
+      onInput({ target: form });
+    });
   }
-  function renderRate() { $('#rateBox').innerHTML = rateBoxHtml(f, rateState, rateEditing); }
 
   let snap = '';
   const snapshot = () => [f.split.members.join(), f.split.mode, f.date, f.currency].join('#');
   function onInput(e) {
     if (e.target.name === 'rateManual') {
       const v = parseNum(e.target.value) / 100;
-      if (v > 0) { f.rate = v; f.rateSource = 'manual'; f.rateDate = f.date; rateState = 'ok'; updateRateText(form, f); updateShares(); }
+      if (v > 0) { f.rate = v; f.rateSource = 'manual'; updateRateText(form, f); updateShares(); }
       return;
     }
     const before = snap;
@@ -647,7 +657,7 @@ function renderBillForm(editId, params = {}) {
     readForm();
     snap = snapshot();
     if (before !== snap) renderSplitRows(); else updateShares();
-    if (prevDate !== f.date) loadRate();
+    if (prevDate !== f.date && !rateEditing) renderRate();
   }
   form.addEventListener('input', onInput);
   form.addEventListener('change', onInput);
@@ -664,7 +674,8 @@ function renderBillForm(editId, params = {}) {
     const act = b.dataset.f;
     if (act === 'all' || act === 'none') { form.querySelectorAll('input[name=members]').forEach((x) => (x.checked = act === 'all')); onInput({ target: b }); }
     if (act === 'editRate') { rateEditing = true; renderRate(); $('[name=rateManual]').focus(); }
-    if (act === 'autoRate') { f.rateSource = null; rateEditing = false; loadRate(true); }
+    if (act === 'autoRate') { f.rate = null; f.rateSource = null; rateEditing = false; renderRate(); updateShares(); }
+    if (act === 'addMember') addMemberHere(b.dataset.where);
   });
 
   form.addEventListener('submit', async (e) => {
@@ -692,7 +703,6 @@ function renderBillForm(editId, params = {}) {
   snap = snapshot();
   renderSplitRows();
   renderRate();
-  if (!(f.rate > 0)) loadRate(true);
 }
 
 // ================= 还款 =================
@@ -704,12 +714,16 @@ function renderPayForm(editId, params = {}) {
   const cur0 = params.JPY ? 'JPY' : params.CNY ? 'CNY' : prefs.lastCur || 'JPY';
   const f = src
     ? { ...clone(src), amount: String(src.amount), credit: src.creditCurrency && src.creditCurrency !== src.currency ? 'other' : 'same' }
-    : { date: today(), from: params.from || me || '', to: params.to || '', currency: cur0, amount: owed[cur0] ? String(owed[cur0]) : '', method: '', credit: 'same', rate: null, rateDate: null, rateSource: null, note: '' };
+    : { date: today(), from: params.from || me || '', to: params.to || '', currency: cur0, amount: owed[cur0] ? String(owed[cur0]) : '', method: '', credit: 'same', note: '' };
+  if (!isManual(f)) Object.assign(f, { rate: null, rateSource: null });
+  delete f.rateDate;
+  delete f.creditAmount;
   let touched = !!src;
-  const active = d.members.filter((m) => !m.inactive).map((m) => m.id);
-  const shownIds = [...new Set([...active, f.from, f.to].filter(Boolean))];
+  // 显示：常用成员 + 还有欠款往来的成员（即使已隐藏）
+  const involved = new Set();
+  C.debtsPairwise(d, 'split').forEach((x) => { involved.add(x.from); involved.add(x.to); });
+  const shownIds = [...new Set([...d.members.filter((m) => !m.inactive || involved.has(m.id)).map((m) => m.id), f.from, f.to].filter(Boolean))];
   const methods = [...new Set([...d.methods, f.method].filter(Boolean))];
-  let rateState = f.rate > 0 ? 'ok' : 'loading';
   let rateEditing = false;
 
   $view.innerHTML = `
@@ -718,8 +732,8 @@ function renderPayForm(editId, params = {}) {
     <form id="pf" class="form" autocomplete="off" novalidate>
       <p class="muted small">谁把钱还给了谁。保存后，对应的欠款会自动减少。</p>
       <label class="field"><span class="lbl">日期</span><input type="date" name="date" value="${f.date}"></label>
-      <div class="field"><span class="lbl">谁还钱（付款）</span>${chips('from', memberOpts(shownIds), f.from)}</div>
-      <div class="field"><span class="lbl">还给谁（收款）</span>${chips('to', memberOpts(shownIds), f.to)}</div>
+      <div class="field"><span class="lbl">谁还钱（付款）</span><div id="fromBox">${withAdd(chips('from', memberOpts(shownIds), f.from), 'from')}</div></div>
+      <div class="field"><span class="lbl">还给谁（收款）</span><div id="toBox">${withAdd(chips('to', memberOpts(shownIds), f.to), 'to')}</div></div>
       <div class="field"><span class="lbl">金额</span>
         <div class="amount-row">${seg('currency', [['JPY', '日元'], ['CNY', '人民币']], f.currency)}
           <div class="amount-wrap"><input name="amount" class="amount-input" inputmode="decimal" value="${esc(f.amount)}" placeholder="0"><span class="unit" id="unit">${CUR[f.currency].unit}</span></div></div>
@@ -727,7 +741,7 @@ function renderPayForm(editId, params = {}) {
       </div>
       <div class="field"><span class="lbl">支付方式</span>${chips('method', methods.map((m) => [m, esc(m)]), f.method, { toggle: true })}</div>
       <div class="field"><span class="lbl">抵扣哪种欠款</span><div id="creditBox"></div><div class="hint" id="creditHint"></div></div>
-      <div class="field"><span class="lbl">汇率（按还款日）</span><div class="rate-box" id="rateBox"></div></div>
+      <div class="field"><span class="lbl">汇率（按还款日的银联汇率）</span><div class="rate-box" id="rateBox"></div></div>
       <label class="field"><span class="lbl">备注</span><textarea name="note" rows="2" placeholder="可选">${esc(f.note || '')}</textarea></label>
       <div class="form-actions"><button type="submit" class="btn primary block" ${S.canWrite() ? '' : 'disabled'}>保存</button>
         ${editId ? `<a class="btn block" href="#/bills">取消</a>` : ''}</div>
@@ -755,7 +769,7 @@ function renderPayForm(editId, params = {}) {
     const amt = parseNum(f.amount);
     const ch = $('#creditHint');
     if (f.credit === 'other' && amt > 0) {
-      const v = C.convert(amt, f.currency, otherCur(), f.rate || refRate());
+      const v = C.convert(amt, f.currency, otherCur(), formRate(f));
       ch.innerHTML = `按还款日汇率，相当于抵扣 ${money(v, otherCur())} 的${CUR[otherCur()].name}欠款`;
     } else ch.innerHTML = f.credit === 'other' ? '比如：欠的是日元，用微信/支付宝还人民币' : '';
     // 当前欠款提示
@@ -766,32 +780,21 @@ function renderPayForm(editId, params = {}) {
       oh.innerHTML = debts.length ? `目前 ${nm(f.from)} 欠 ${nm(f.to)}：${amts(o)}` : `目前 ${nm(f.from)} 不欠 ${nm(f.to)} 钱`;
     } else oh.innerHTML = f.from && f.from === f.to ? '<span class="err">付款人和收款人不能是同一个人</span>' : '';
   }
-  let rateSeq = 0;
-  async function loadRate(force) {
-    if (f.rateSource === 'manual' && !force) return;
-    if (!f.date) return;
-    const seq = ++rateSeq;
-    rateState = 'loading';
-    renderRate();
-    try {
-      const r = await getRate(f.date);
-      if (seq !== rateSeq) return;
-      Object.assign(f, { rate: r.rate, rateDate: r.date, rateSource: r.source });
-      rateState = 'ok';
-    } catch {
-      if (seq !== rateSeq) return;
-      Object.assign(f, { rate: null, rateDate: null, rateSource: null });
-      rateState = 'error';
-    }
-    renderRate();
-    update();
+  function renderRate() { $('#rateBox').innerHTML = rateBoxHtml(f, rateEditing); }
+  function addMemberHere(where) {
+    editMember(null, (m) => {
+      shownIds.push(m.id);
+      f[where] = m.id;
+      $('#fromBox').innerHTML = withAdd(chips('from', memberOpts(shownIds), f.from), 'from');
+      $('#toBox').innerHTML = withAdd(chips('to', memberOpts(shownIds), f.to), 'to');
+      onInput({ target: form });
+    });
   }
-  function renderRate() { $('#rateBox').innerHTML = rateBoxHtml(f, rateState, rateEditing); }
 
   function onInput(e) {
     if (e.target.name === 'rateManual') {
       const v = parseNum(e.target.value) / 100;
-      if (v > 0) { f.rate = v; f.rateSource = 'manual'; f.rateDate = f.date; rateState = 'ok'; updateRateText(form, f); update(); }
+      if (v > 0) { f.rate = v; f.rateSource = 'manual'; updateRateText(form, f); update(); }
       return;
     }
     if (e.target.name === 'amount') touched = true;
@@ -807,7 +810,7 @@ function renderPayForm(editId, params = {}) {
       $('[name=amount]').value = f.amount;
     }
     update();
-    if (prev.date !== f.date) loadRate();
+    if (prev.date !== f.date && !rateEditing) renderRate();
   }
   form.addEventListener('input', onInput);
   form.addEventListener('change', onInput);
@@ -822,7 +825,8 @@ function renderPayForm(editId, params = {}) {
     if (!b) return;
     e.preventDefault();
     if (b.dataset.f === 'editRate') { rateEditing = true; renderRate(); $('[name=rateManual]').focus(); }
-    if (b.dataset.f === 'autoRate') { f.rateSource = null; rateEditing = false; loadRate(true); }
+    if (b.dataset.f === 'autoRate') { f.rate = null; f.rateSource = null; rateEditing = false; renderRate(); update(); }
+    if (b.dataset.f === 'addMember') addMemberHere(b.dataset.where);
   });
 
   form.addEventListener('submit', async (e) => {
@@ -837,13 +841,11 @@ function renderPayForm(editId, params = {}) {
     const now = nowISO();
     const p = {
       id: editId || uid('p'), date: f.date, from: f.from, to: f.to, currency: f.currency, amount, method: f.method,
-      rate: f.rate > 0 ? f.rate : null, rateDate: f.rateDate || null, rateSource: f.rateSource || null, note: f.note,
+      ...rateFields(f), note: f.note,
       createdAt: src?.createdAt || now, createdBy: src ? src.createdBy : me || '', updatedAt: now,
     };
-    if (f.credit === 'other') {
-      p.creditCurrency = otherCur();
-      p.creditAmount = C.convert(amount, f.currency, p.creditCurrency, f.rate > 0 ? f.rate : refRate());
-    }
+    // 换算抵扣：抵扣金额按还款日的汇率实时计算，不写死
+    if (f.credit === 'other') p.creditCurrency = otherCur();
     const btn = form.querySelector('[type=submit]');
     btn.disabled = true;
     const ok = await save({ t: 'putPayment', v: p }, `${editId ? '修改还款' : '还款'} ${p.date} ${mem(p.from).short}→${mem(p.to).short} ${amount}${p.currency}`);
@@ -854,7 +856,6 @@ function renderPayForm(editId, params = {}) {
   renderCredit();
   update();
   renderRate();
-  if (!(f.rate > 0)) loadRate(true);
 }
 
 // ================= 统计 =================
@@ -950,7 +951,7 @@ function renderSettings() {
         ${w ? '<button class="btn" data-act="importJSON">从 JSON 恢复</button>' : ''}<button class="btn" data-act="refresh">重新加载</button>
         ${st.pending ? '<button class="btn danger" data-act="discard">放弃未同步的修改</button>' : ''}</div>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
-      <p class="muted small pad">共 ${d.bills.length} 笔账、${d.payments.length} 条还款、${d.members.length} 位成员。${d.updatedAt ? `最后更新 ${new Date(d.updatedAt).toLocaleString()}` : ''}</p>
+      <p class="muted small pad">汇率：银联当日 JPY→CNY 汇率，已更新到 <b>${C.latestRateDate() || '（未加载）'}</b>（GitHub Actions 每 3 小时自动拉取）。<br>共 ${d.bills.length} 笔账、${d.payments.length} 条还款、${d.members.length} 位成员。${d.updatedAt ? `最后更新 ${new Date(d.updatedAt).toLocaleString()}` : ''}</p>
     </section>`;
 
   const mf = document.getElementById('methodForm');
@@ -1001,15 +1002,15 @@ function renderSettings() {
   });
 }
 
-function editMember(id) {
+function editMember(id, onSaved) {
   const d = D();
   const m = id ? d.members.find((x) => x.id === id) : { id: '', name: '', short: '', inactive: false };
   if (!m) return;
   const used = id && (d.bills.some((b) => b.payer === id || b.split.members.includes(id)) || d.payments.some((p) => p.from === id || p.to === id));
   openModal(`<h2 class="sheet-t">${id ? '编辑成员' : '添加成员'}</h2>
     <form id="memForm" class="form compact">
-      <label class="field"><span class="lbl">名字</span><input name="name" value="${esc(m.name)}" placeholder="例如：Ruhui / 刘如慧" required></label>
-      <label class="field"><span class="lbl">简称（头像上显示，1–3 个字）</span><input name="short" value="${esc(m.short)}" maxlength="3" placeholder="RH"></label>
+      <label class="field"><span class="lbl">名字</span><input name="name" value="${esc(m.name)}" placeholder="例如：张三" required></label>
+      <label class="field"><span class="lbl">简称（头像上显示，1–3 个字）</span><input name="short" value="${esc(m.short)}" maxlength="3" placeholder="例如：ZS（不填就用名字前两个字）"></label>
       <label class="field"><span class="lbl">颜色</span><input name="color" type="color" value="${m.color || (id ? color(id) : PALETTE[d.members.length % PALETTE.length])}"></label>
       ${id ? `<label class="check"><input type="checkbox" name="inactive" ${m.inactive ? 'checked' : ''}> 隐藏（毕业/不常来了：记账时不再默认显示，历史账目保留）</label>` : ''}
       <div class="btn-row"><button class="btn primary" type="submit">保存</button>
@@ -1017,6 +1018,7 @@ function editMember(id) {
       ${used ? '<p class="muted small">这个成员已经有账目记录，不能删除，可以选择隐藏。</p>' : ''}
     </form>`, (sheet) => {
     const fm = sheet.querySelector('#memForm');
+    if (!id) setTimeout(() => fm.name.focus(), 50);
     fm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = fm.name.value.trim();
@@ -1024,8 +1026,11 @@ function editMember(id) {
       const short = fm.short.value.trim() || name.slice(0, 2);
       const v = { ...m, id: id || uid('m'), name, short, color: fm.color.value, inactive: !!fm.inactive?.checked };
       if (!v.inactive) delete v.inactive;
+      if (!id && D().members.some((x) => x.name === name)) return toast(`已经有叫 ${name} 的成员了`, 'err');
       closeModal();
-      await save({ t: 'putMember', v }, `${id ? '修改' : '添加'}成员 ${name}`);
+      const saving = save({ t: 'putMember', v }, `${id ? '修改' : '添加'}成员 ${name}`);
+      if (S.canWrite() && onSaved) onSaved(v); // 数据已在本机更新，表单里立即可选
+      await saving;
     });
     sheet.querySelector('#delMem')?.addEventListener('click', async () => {
       if (!confirm(`删除成员 ${m.name}？`)) return;
@@ -1058,6 +1063,7 @@ function toCSV() {
 }
 
 // ================= 启动 =================
+C.setRateTable(S.state.rates);
 renderSync();
 route();
 S.init();

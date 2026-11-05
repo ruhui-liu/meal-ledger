@@ -3,28 +3,33 @@
   "members": [
     {
       "id": "rh",
-      "name": "Ruhui",
+      "name": "刘汝晖",
       "short": "RH"
     },
     {
       "id": "t",
-      "name": "Tao",
+      "name": "王韬",
       "short": "T"
     },
     {
       "id": "rq",
-      "name": "Ruiqi",
+      "name": "张睿骐",
       "short": "RQ"
     },
     {
       "id": "zq",
-      "name": "Zhaoqiang",
+      "name": "郑照强",
       "short": "ZQ"
     },
     {
       "id": "b",
-      "name": "Bo",
+      "name": "黄博",
       "short": "B"
+    },
+    {
+      "id": "yf",
+      "name": "张宇帆",
+      "short": "YF"
     }
   ],
   "methods": [
@@ -41,27 +46,26 @@
       "kind": "carry",
       "date": "2026-05-26",
       "meal": "",
-      "title": "Excel 总账结转（截至 5/26，欠 Ruhui 的日元）",
+      "title": "Excel 总账结转（截至 5/26，欠 刘汝晖 的日元）",
       "currency": "JPY",
-      "amount": 54952.06,
+      "amount": 68447.13,
       "payer": "rh",
       "method": "",
       "split": {
         "mode": "amount",
         "members": [
           "t",
-          "rq"
+          "rq",
+          "yf"
         ],
         "values": {
           "t": 37815.23,
-          "rq": 17136.83
+          "rq": 17136.83,
+          "yf": 13495.07
         }
       },
-      "rate": 0.042619,
-      "rateDate": "2026-05-26",
-      "rateSource": "ECB",
-      "note": "来自 Excel「summary_26.01.15~26.05.26」的「总净额结算」(to RH JPY)，已是两两抵消后的净额。",
-      "createdAt": "2026-11-05T15:44:35.000Z",
+      "note": "来自 Excel「summary_26.01.15~26.05.26」的「总净额结算」(to RH JPY)，已是两两抵消后的净额。 张宇帆的 13495.07 来自 2026.01 以前的旧总账（Yufan 列 F28）。",
+      "createdAt": "2026-11-05T16:08:19.000Z",
       "createdBy": "rh"
     },
     {
@@ -69,9 +73,9 @@
       "kind": "carry",
       "date": "2026-05-26",
       "meal": "",
-      "title": "Excel 总账结转（截至 5/26，欠 Ruhui 的人民币）",
+      "title": "Excel 总账结转（截至 5/26，欠 刘汝晖 的人民币）",
       "currency": "CNY",
-      "amount": 3747.78,
+      "amount": 4420.82,
       "payer": "rh",
       "method": "",
       "split": {
@@ -80,20 +84,19 @@
           "t",
           "rq",
           "zq",
-          "b"
+          "b",
+          "yf"
         ],
         "values": {
           "t": 1160.07,
           "rq": 1042.2,
           "zq": 1333.82,
-          "b": 211.69
+          "b": 211.69,
+          "yf": 673.04
         }
       },
-      "rate": 0.042619,
-      "rateDate": "2026-05-26",
-      "rateSource": "ECB",
-      "note": "来自 Excel「summary_26.01.15~26.05.26」的「总净额结算」(to RH CNY)，已是两两抵消后的净额。",
-      "createdAt": "2026-11-05T15:44:35.000Z",
+      "note": "来自 Excel「summary_26.01.15~26.05.26」的「总净额结算」(to RH CNY)，已是两两抵消后的净额。 张宇帆的 673.04 来自 2026.01 以前的旧总账（Yufan 列 F25）。",
+      "createdAt": "2026-11-05T16:08:19.000Z",
       "createdBy": "rh"
     },
     {
@@ -101,7 +104,7 @@
       "kind": "carry",
       "date": "2026-05-26",
       "meal": "",
-      "title": "Excel 总账结转（截至 5/26，欠 Zhaoqiang 的日元）",
+      "title": "Excel 总账结转（截至 5/26，欠 郑照强 的日元）",
       "currency": "JPY",
       "amount": 50619.58,
       "payer": "zq",
@@ -121,11 +124,8 @@
           "b": 5944
         }
       },
-      "rate": 0.042619,
-      "rateDate": "2026-05-26",
-      "rateSource": "ECB",
       "note": "来自 Excel「summary_26.01.15~26.05.26」的「总净额结算」(to ZQ JPY)，已是两两抵消后的净额。",
-      "createdAt": "2026-11-05T15:44:35.000Z",
+      "createdAt": "2026-11-05T16:08:19.000Z",
       "createdBy": "rh"
     },
     {
@@ -153,11 +153,8 @@
           "b": 1490
         }
       },
-      "rate": 0.042487,
-      "rateDate": "2026-05-29",
-      "rateSource": "ECB",
       "note": "",
-      "createdAt": "2026-11-05T15:44:35.000Z",
+      "createdAt": "2026-11-05T16:08:19.000Z",
       "createdBy": "rh"
     },
     {
@@ -179,14 +176,11 @@
           "b"
         ]
       },
-      "rate": 0.042487,
-      "rateDate": "2026-05-29",
-      "rateSource": "ECB",
       "note": "",
-      "createdAt": "2026-11-05T15:44:35.000Z",
+      "createdAt": "2026-11-05T16:08:19.000Z",
       "createdBy": "rh"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-05T15:44:35.000Z"
+  "updatedAt": "2026-11-05T16:08:19.000Z"
 }

@@ -3,6 +3,30 @@ import { CUR, CURS, isZero } from './util.js';
 
 const DEFAULT_RATE = 0.047; // 完全没有汇率数据时的兜底（1円≈0.047元）
 
+// ---------- 银联汇率表 ----------
+// data/rates.json 由 GitHub Actions 每天从银联拉取：{ "2026-05-29": 0.042692, ... }（1円 = 多少元）
+let TABLE = {};
+let DATES = [];
+export function setRateTable(t) {
+  if (t === TABLE) return;
+  TABLE = t || {};
+  DATES = Object.keys(TABLE).sort();
+}
+/** 某一天的银联汇率；当天的还没发布时用之前最近一天的（exact=false） */
+export function rateInfo(date) {
+  if (!date) return null;
+  if (TABLE[date] > 0) return { rate: TABLE[date], date, exact: true };
+  if (!DATES.length) return null;
+  let lo = 0, hi = DATES.length - 1, best = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (DATES[mid] <= date) { best = mid; lo = mid + 1; } else hi = mid - 1;
+  }
+  const d = DATES[best < 0 ? 0 : best];
+  return { rate: TABLE[d], date: d, exact: false };
+}
+export const latestRateDate = () => DATES[DATES.length - 1] || '';
+
 /** 每位参与人在这笔账里应承担的金额（账单原币种） */
 export function sharesOf(bill) {
   const sp = bill.split || {};
@@ -59,7 +83,7 @@ export function convert(x, from, to, rate) {
   return from === 'JPY' ? x * rate : x / rate;
 }
 
-/** 给缺汇率的记录找最近日期的汇率 */
+/** 汇率表不可用时：用账目里存过的汇率兜底 */
 function rateFinder(data) {
   const known = [...data.bills, ...data.payments]
     .filter((r) => r.rate > 0)
@@ -75,8 +99,20 @@ function rateFinder(data) {
     return best[1];
   };
 }
+/** 一条记录用的汇率：手动填写 > 银联当日 > 记录里存的 > 兜底 */
+function resolver(data) {
+  let find = null;
+  return (rec) => {
+    if (rec.rateSource === 'manual' && rec.rate > 0) return rec.rate;
+    const info = rateInfo(rec.date);
+    if (info) return info.rate;
+    if (rec.rate > 0) return rec.rate;
+    find = find || rateFinder(data);
+    return find(rec.date);
+  };
+}
 export function rateOf(rec, data) {
-  return rec.rate > 0 ? rec.rate : rateFinder(data)(rec.date);
+  return resolver(data)(rec);
 }
 
 /**
@@ -84,10 +120,10 @@ export function rateOf(rec, data) {
  * 还款 A→B 记为 B 欠 A（抵消 A 原来欠 B 的钱）。
  */
 export function flows(data) {
-  const find = rateFinder(data);
+  const R = resolver(data);
   const out = [];
   for (const b of data.bills) {
-    const rate = b.rate > 0 ? b.rate : find(b.date);
+    const rate = R(b);
     const sh = sharesOf(b);
     for (const [id, v] of Object.entries(sh)) {
       if (id === b.payer || !(Math.abs(v) > 1e-9)) continue;
@@ -95,7 +131,7 @@ export function flows(data) {
     }
   }
   for (const p of data.payments) {
-    const rate = p.rate > 0 ? p.rate : find(p.date);
+    const rate = R(p);
     const credited = creditOf(p, rate);
     out.push({ type: 'payment', ref: p, date: p.date, from: p.to, to: p.from, cur: credited.cur, amt: credited.amt, rate });
   }
@@ -204,7 +240,7 @@ export function stats(data, range = {}) {
     o.toCNY += convert(v, cur, 'CNY', rate);
     o.toJPY += convert(v, cur, 'JPY', rate);
   };
-  const find = rateFinder(data);
+  const R = resolver(data);
   const per = {};
   const P = (id) => (per[id] = per[id] || { paidCount: 0, joinCount: 0, paid: blank(), used: blank() });
   const total = { count: 0, amt: blank() };
@@ -214,7 +250,7 @@ export function stats(data, range = {}) {
     if (b.kind === 'carry') continue;
     if (range.from && b.date < range.from) continue;
     if (range.to && b.date > range.to) continue;
-    const rate = b.rate > 0 ? b.rate : find(b.date);
+    const rate = R(b);
     total.count++;
     addTo(total.amt, b.currency, b.amount, rate);
     const p = P(b.payer);

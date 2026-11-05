@@ -1,0 +1,44 @@
+# 每隔几小时从银联拉取当天的 JPY→CNY 汇率，更新 data/rates.json
+name: 更新银联汇率
+
+on:
+  schedule:
+    - cron: "23 */3 * * *"   # 每 3 小时一次（UTC）
+  workflow_dispatch: {}       # 也可以在 Actions 页面手动运行
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-rates
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 拉取银联汇率
+        run: python3 scripts/update_rates.py
+
+      - name: 提交
+        run: |
+          if git diff --quiet -- data/rates.json; then
+            echo "汇率没有变化"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/rates.json
+          git commit -m "更新银联汇率 $(TZ=Asia/Tokyo date +%F)"
+          # 网页记账也会往这个分支提交，推送前先合并最新的
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
