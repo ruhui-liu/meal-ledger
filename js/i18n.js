@@ -258,6 +258,7 @@ const EN = {
   '清爽薄荷绿': 'Fresh mint',
   '深色金融': 'Dark fintech',
   '活泼圆润': 'Playful',
+  '三星 One UI': 'Samsung One UI',
   '暖橙（原版）': 'Warm orange (original)',
   '（只保存在这台设备）': '(saved on this device only)',
   '先添加成员': 'Add members first',

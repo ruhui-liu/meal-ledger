@@ -223,3 +223,89 @@
 [data-theme="material"] .sheet .list, [data-theme="material"] .sheet .shares, [data-theme="material"] .sheet .note { background: var(--surface); }
 [data-theme="material"] .sheet-close { background: transparent; }
 [data-theme="material"] .toast { background: #303030; border-radius: 8px; }
+
+/* ---------- 三星 One UI 风 ---------- */
+:root[data-theme="oneui"] {
+  --bg: #f4f4f6; --surface: #ffffff; --surface-2: #ececef; --text: #0b0b0c; --muted: #77777c;
+  --line: #e6e6e9; --accent: #3478f6; --accent-ink: #ffffff; --accent-soft: #e2ecff;
+  --pos: #0b9a5a; --neg: #e5352c; --u-jpy: #77777c; --u-cny: #77777c; --radius: 26px; --shadow: none;
+  --warn-bg: #fff4dc; --warn-line: transparent; --tabbar-h: 64px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="oneui"] {
+    --bg: #000000; --surface: #171719; --surface-2: #262629; --text: #fafafa; --muted: #8f8f95;
+    --line: #2b2b2e; --accent: #5b94ff; --accent-ink: #fff; --accent-soft: #14284d; --pos: #3fd18b; --neg: #ff6259;
+    --warn-bg: #2e2716;
+  }
+}
+[data-theme="oneui"] body { font-family: "Samsung Sans", "SamsungOne", Roboto, "Noto Sans SC", "PingFang SC", sans-serif; }
+[data-theme="oneui"] .topbar { background: var(--bg); border-bottom: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+[data-theme="oneui"] .brand { font-weight: 600; }
+[data-theme="oneui"] .lang-btn, [data-theme="oneui"] .sync { border: 0; background: var(--surface); }
+/* 大标题区：标题居中，内容下移，方便单手操作 */
+[data-theme="oneui"] .page-h { flex-direction: column; justify-content: center; text-align: center; padding: 46px 0 34px; margin: 0; gap: 16px; }
+[data-theme="oneui"] .page-h h1 { font-size: 32px; font-weight: 600; letter-spacing: -.01em; }
+[data-theme="oneui"] .card { border: 0; border-radius: 26px; }
+[data-theme="oneui"] .card h3 { font-size: 13.5px; font-weight: 600; color: var(--muted); padding: 16px 20px 4px; }
+[data-theme="oneui"] .card-h { border-bottom: 0; padding: 16px 20px 8px; }
+[data-theme="oneui"] .card-h b, [data-theme="oneui"] .debt-who b, [data-theme="oneui"] .item-t { font-weight: 600; }
+/* 列表分隔线从图标右侧开始 */
+[data-theme="oneui"] .debt, [data-theme="oneui"] .item, [data-theme="oneui"] .net-row, [data-theme="oneui"] .mem-row, [data-theme="oneui"] .stat-p, [data-theme="oneui"] .share-row, [data-theme="oneui"] .split-row { border-top: 0; position: relative; padding-left: 20px; padding-right: 20px; }
+[data-theme="oneui"] .debt + .debt::before, [data-theme="oneui"] .item + .item::before, [data-theme="oneui"] .net-row + .net-row::before,
+[data-theme="oneui"] .mem-row + .mem-row::before, [data-theme="oneui"] .stat-p + .stat-p::before, [data-theme="oneui"] .share-row + .share-row::before,
+[data-theme="oneui"] .split-row + .split-row::before {
+  content: ""; position: absolute; top: 0; left: 66px; right: 20px; border-top: 1px solid var(--line);
+}
+[data-theme="oneui"] .item + .item::before { left: 70px; }
+/* 圆角方形头像 */
+[data-theme="oneui"] .av { border-radius: 34%; background: var(--c); color: #fff; border: 0; font-weight: 700; }
+[data-theme="oneui"] .av.xs { border-radius: 30%; }
+[data-theme="oneui"] .money { font-weight: 600; }
+[data-theme="oneui"] .money .u { color: var(--muted); }
+[data-theme="oneui"] .big { font-weight: 600; }
+/* 分段：胶囊 */
+[data-theme="oneui"] .seg { border: 0; border-radius: 999px; background: var(--surface-2); padding: 3px; }
+[data-theme="oneui"] .seg label > span, [data-theme="oneui"] .seg > a { border-radius: 999px; font-weight: 600; }
+[data-theme="oneui"] .seg input:checked + span, [data-theme="oneui"] .seg a.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
+/* chip / 按钮 */
+[data-theme="oneui"] .chip > span, [data-theme="oneui"] .chip-btn { border: 0; background: var(--surface); font-weight: 500; }
+[data-theme="oneui"] .chip input:checked + span, [data-theme="oneui"] .chip-btn.on { background: var(--accent); color: #fff; }
+[data-theme="oneui"] .chip input:checked + span .av, [data-theme="oneui"] .chip-btn.on .av { background: #fff; color: var(--c); }
+[data-theme="oneui"] .chip-add { border-width: 1.5px; }
+[data-theme="oneui"] .btn { border-radius: 999px; border: 0; background: var(--surface-2); color: var(--accent); font-weight: 600; }
+[data-theme="oneui"] .btn.primary { background: var(--accent); color: #fff; box-shadow: none; }
+[data-theme="oneui"] .btn.danger { color: var(--neg); }
+[data-theme="oneui"] .btn-mini { border: 0; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 6px 13px; }
+[data-theme="oneui"] .tag { border: 0; border-radius: 999px; padding: 0 8px; background: var(--surface-2); }
+[data-theme="oneui"] .link { font-weight: 600; }
+/* 输入框：填充式 */
+[data-theme="oneui"] input:not([type=radio]):not([type=checkbox]):not([type=color]), [data-theme="oneui"] textarea { border: 0; background: var(--surface); border-radius: 16px; }
+[data-theme="oneui"] input:focus, [data-theme="oneui"] textarea:focus { outline: 0; box-shadow: inset 0 0 0 2px var(--accent); }
+[data-theme="oneui"] .search { border-radius: 999px !important; padding-left: 20px !important; }
+[data-theme="oneui"] .split-rows, [data-theme="oneui"] .rate-box, [data-theme="oneui"] .shares, [data-theme="oneui"] .note { border: 0; border-radius: 22px; }
+[data-theme="oneui"] .split-row input { background: var(--surface-2) !important; }
+[data-theme="oneui"] .notice { border-radius: 22px; border: 0; }
+/* 悬浮底部导航条 */
+[data-theme="oneui"] .tabbar {
+  left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); height: 64px; padding-bottom: 0;
+  border: 0; border-radius: 32px; background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .12);
+}
+[data-theme="oneui"] .tabbar a { font-weight: 500; }
+[data-theme="oneui"] .tabbar a.active { color: var(--text); font-weight: 700; }
+[data-theme="oneui"] .tabbar a.active svg { stroke-width: 2.4; }
+[data-theme="oneui"] .tabbar .tab-add svg { background: var(--accent); stroke: #fff; border-radius: 50%; }
+[data-theme="oneui"] .tabbar .tab-add { color: var(--muted); }
+[data-theme="oneui"] .tabbar .tab-add.active { color: var(--text); }
+[data-theme="oneui"] .view { padding-bottom: calc(64px + 10px + env(safe-area-inset-bottom) + 28px); }
+[data-theme="oneui"] .form-actions { bottom: calc(64px + 18px + env(safe-area-inset-bottom)); }
+@media (min-width: 820px) { [data-theme="oneui"] .form-actions { bottom: 12px; } }
+[data-theme="oneui"] .toast { bottom: calc(64px + 24px + env(safe-area-inset-bottom)); border-radius: 999px; background: #3b3b3e; }
+/* 弹窗：悬浮圆角卡片 */
+[data-theme="oneui"] .sheet { margin: 0 10px calc(10px + env(safe-area-inset-bottom)); border-radius: 30px; background: var(--bg); width: calc(100% - 20px); }
+[data-theme="oneui"] .sheet-close { background: var(--surface); }
+[data-theme="oneui"] .sheet .list, [data-theme="oneui"] .sheet .shares, [data-theme="oneui"] .sheet .note { background: var(--surface); }
+[data-theme="oneui"] .card .chip-btn:not(.on), [data-theme="oneui"] .card .chip input:not(:checked) + span { background: var(--surface-2); }
+@media (prefers-color-scheme: dark) {
+  [data-theme="oneui"] .tabbar { background: color-mix(in srgb, #222225 92%, transparent); box-shadow: 0 0 0 1px var(--line), 0 6px 24px rgba(0, 0, 0, .5); }
+}

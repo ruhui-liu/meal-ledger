@@ -10,7 +10,7 @@ const $view = document.getElementById('view');
 const MEALS = ['早餐', '午餐', '晚餐', '夜宵', '其他']; // 存的是中文，显示时翻译
 const PALETTE = ['#d9480f', '#1c7ed6', '#2b8a3e', '#9c36b5', '#e67700', '#0b7285', '#c2255c', '#5c940d', '#6741d9', '#a61e4d'];
 const FORM_VIEWS = new Set(['add', 'edit', 'pay']);
-const THEMES = [['material', 'Google 简约（默认）'], ['ios', 'iOS 原生'], ['mint', '清爽薄荷绿'], ['night', '深色金融'], ['play', '活泼圆润'], ['warm', '暖橙（原版）']];
+const THEMES = [['material', 'Google 简约（默认）'], ['ios', 'iOS 原生'], ['mint', '清爽薄荷绿'], ['night', '深色金融'], ['play', '活泼圆润'], ['oneui', '三星 One UI'], ['warm', '暖橙（原版）']];
 
 const prefs = Object.assign(
   { balMode: 'split', balAlgo: 'pair', balScope: 'all', statsRange: 'all', statsMode: 'split', statsFrom: '', statsTo: '', billType: 'all', billPerson: '' },
