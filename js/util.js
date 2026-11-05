@@ -1,4 +1,5 @@
 // 通用小工具
+import { getLang } from './i18n.js';
 export const CUR = {
   JPY: { code: 'JPY', name: '日元', unit: '円', dp: 0, eps: 0.5 },
   CNY: { code: 'CNY', name: '人民币', unit: '元', dp: 2, eps: 0.005 },
@@ -18,11 +19,14 @@ export function today() {
 export const nowISO = () => new Date().toISOString();
 
 const WD = ['日', '一', '二', '三', '四', '五', '六'];
+const WD_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MON_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export function fmtDate(s, withYear = false) {
   if (!s) return '';
   const [y, m, d] = s.split('-').map(Number);
   const wd = new Date(y, m - 1, d).getDay();
   const showY = withYear || y !== new Date().getFullYear();
+  if (getLang() === 'en') return `${WD_EN[wd]}, ${MON_EN[m - 1]} ${d}${showY ? ', ' + y : ''}`;
   return `${showY ? y + '年' : ''}${m}月${d}日 周${WD[wd]}`;
 }
 export function fmtDateShort(s) {
@@ -32,12 +36,13 @@ export function fmtDateShort(s) {
 }
 export function weekday(s) {
   const [y, m, d] = s.split('-').map(Number);
-  return '周' + WD[new Date(y, m - 1, d).getDay()];
+  const wd = new Date(y, m - 1, d).getDay();
+  return getLang() === 'en' ? WD_EN[wd] : '周' + WD[wd];
 }
 export const monthKey = (s) => s.slice(0, 7);
 export function fmtMonth(k) {
   const [y, m] = k.split('-').map(Number);
-  return `${y}年${m}月`;
+  return getLang() === 'en' ? `${MON_EN[m - 1]} ${y}` : `${y}年${m}月`;
 }
 
 export function roundCur(n, cur) {
@@ -53,12 +58,14 @@ export function num(n, cur) {
   const dp = CUR[cur].dp;
   return v.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
 }
+// 金额单位：中文用 円 / 元，英文用 JPY / CNY
+export const unit = (cur) => (getLang() === 'en' ? ' ' + cur : CUR[cur].unit);
 // 带单位的金额 HTML
 export function money(n, cur, cls = '') {
-  return `<span class="money ${cls}">${num(n, cur)}<i class="u u-${cur}">${CUR[cur].unit}</i></span>`;
+  return `<span class="money ${cls}">${num(n, cur)}<i class="u u-${cur}">${unit(cur)}</i></span>`;
 }
 export function moneyText(n, cur) {
-  return `${num(n, cur)}${CUR[cur].unit}`;
+  return `${num(n, cur)}${unit(cur)}`;
 }
 
 // 解析金额，支持 "1,200"、全角数字、以及 "1090+330"、"23580/3" 这样的简单算式

@@ -19,14 +19,15 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#/"><img src="icons/icon.svg" alt="" width="26" height="26">饭账本</a>
+    <a class="brand" href="#/"><img src="icons/icon.svg" alt="" width="26" height="26"><span data-i18n="饭账本">饭账本</span></a>
     <nav class="topnav" aria-label="主导航">
-      <a href="#/" data-nav="balances">结算</a>
-      <a href="#/bills" data-nav="bills">账目</a>
-      <a href="#/add" data-nav="add">记一笔</a>
-      <a href="#/stats" data-nav="stats">统计</a>
-      <a href="#/settings" data-nav="settings">设置</a>
+      <a href="#/" data-nav="balances" data-i18n="结算">结算</a>
+      <a href="#/bills" data-nav="bills" data-i18n="账目">账目</a>
+      <a href="#/add" data-nav="add" data-i18n="记一笔">记一笔</a>
+      <a href="#/stats" data-nav="stats" data-i18n="统计">统计</a>
+      <a href="#/settings" data-nav="settings" data-i18n="设置">设置</a>
     </nav>
+    <button class="lang-btn" id="langBtn" type="button">EN</button>
     <button class="sync" id="sync" type="button"></button>
   </header>
 
@@ -34,15 +35,15 @@
 
   <nav class="tabbar" aria-label="主导航">
     <a href="#/" data-nav="balances">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg><span>结算</span></a>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg><span data-i18n="结算">结算</span></a>
     <a href="#/bills" data-nav="bills">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></svg><span>账目</span></a>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></svg><span data-i18n="账目">账目</span></a>
     <a href="#/add" data-nav="add" class="tab-add">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>记一笔</span></a>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="记一笔">记一笔</span></a>
     <a href="#/stats" data-nav="stats">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span>统计</span></a>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span data-i18n="统计">统计</span></a>
     <a href="#/settings" data-nav="settings">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>设置</span></a>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span data-i18n="设置">设置</span></a>
   </nav>
 
   <div id="modal-root"></div>

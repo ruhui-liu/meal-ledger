@@ -3,6 +3,7 @@
 // - 只读模式：在 GitHub Pages 上打开但没有 Token，只能看
 // - 本地模式：不在 github.io 上（比如本机测试），数据存在浏览器里
 import { b64encode, b64decode, readLS, writeLS, clone, nowISO } from './util.js';
+import { t } from './i18n.js';
 
 const LS = { cfg: 'fz.config', cache: 'fz.cache', pending: 'fz.pending', local: 'fz.local', rates: 'fz.unionpay' };
 export const DEFAULT_METHODS = ['现金', '刷卡', '支付宝', '微信支付', 'PayPay', '其他'];
@@ -146,9 +147,9 @@ async function ghPut(c, data, prevSha, message) {
 async function errText(res) {
   let msg = `HTTP ${res.status}`;
   try { const j = await res.json(); if (j.message) msg += `: ${j.message}`; } catch { /* ignore */ }
-  if (res.status === 401) msg = 'Token 无效或已过期 (401)';
-  if (res.status === 403) msg += '（Token 没有写入权限，或请求次数超限）';
-  if (res.status === 404) msg = '找不到仓库或文件 (404)，请检查用户名/仓库名，或 Token 是否有该仓库权限';
+  if (res.status === 401) msg = t('Token 无效或已过期 (401)');
+  if (res.status === 403) msg += t('（Token 没有写入权限，或请求次数超限）');
+  if (res.status === 404) msg = t('找不到仓库或文件 (404)，请检查用户名/仓库名，或 Token 是否有该仓库权限');
   return msg;
 }
 
@@ -159,9 +160,9 @@ export async function testConnection(c = getConfig()) {
     if (!res.ok) return { ok: false, message: await errText(res) };
     const j = await res.json();
     const canPush = !!j.permissions?.push;
-    return { ok: true, canPush, private: j.private, message: canPush ? '连接成功，可以写入' : c.token ? '能读取，但这个 Token 没有写入权限' : '能读取（未填写 Token，只读）' };
+    return { ok: true, canPush, private: j.private, message: t(canPush ? '连接成功，可以写入' : c.token ? '能读取，但这个 Token 没有写入权限' : '能读取（未填写 Token，只读）') };
   } catch (e) {
-    return { ok: false, message: '网络错误：' + e.message };
+    return { ok: false, message: t('网络错误：') + e.message };
   }
 }
 
@@ -238,7 +239,7 @@ export async function refresh() {
 
 /** 提交一个修改。返回 true 表示已同步（或本地模式已保存），false 表示暂存在本机待同步 */
 export async function commit(op, msg) {
-  if (state.mode === 'readonly') throw new Error('只读模式：请先在「设置」里填写 GitHub Token');
+  if (state.mode === 'readonly') throw new Error(t('只读模式：请先在「设置」里填写 GitHub Token'));
   if (state.mode === 'local') {
     base = applyOp(clone(base || emptyData()), op);
     writeLS(LS.local, base);
@@ -303,7 +304,7 @@ async function doFlush() {
   }
   if (pending.length) {
     state.status = 'error';
-    state.error = state.error || '保存冲突，请稍后重试';
+    state.error = state.error || t('保存冲突，请稍后重试');
     emit();
     return false;
   }

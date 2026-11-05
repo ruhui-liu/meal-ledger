@@ -1,5 +1,6 @@
 // 记账计算：分摊、欠款、换算、统计
 import { CUR, CURS, isZero } from './util.js';
+import { t } from './i18n.js';
 
 const DEFAULT_RATE = 0.047; // 完全没有汇率数据时的兜底（1円≈0.047元）
 
@@ -56,23 +57,23 @@ export function sharesOf(bill) {
 }
 
 export function billError(bill, nameOf = (id) => id) {
-  if (!bill.date) return '请选择日期';
-  if (!(bill.amount > 0)) return '请输入正确的金额';
-  if (!bill.payer) return '请选择付款人';
+  if (!bill.date) return t('请选择日期');
+  if (!(bill.amount > 0)) return t('请输入正确的金额');
+  if (!bill.payer) return t('请选择付款人');
   const sp = bill.split;
-  if (!sp.members.length) return '请至少选一位参与人';
+  if (!sp.members.length) return t('请至少选一位参与人');
   if (sp.mode !== 'equal') {
     for (const id of sp.members) {
-      if (!Number.isFinite(sp.values?.[id])) return `${nameOf(id)} 的数字格式不对`;
+      if (!Number.isFinite(sp.values?.[id])) return t('{name} 的数字格式不对', { name: nameOf(id) });
     }
   }
   if (sp.mode === 'amount') {
     const sum = sp.members.reduce((s, id) => s + (sp.values[id] || 0), 0);
-    if (sum - bill.amount > CUR[bill.currency].eps) return '指定金额的合计超过了总额';
+    if (sum - bill.amount > CUR[bill.currency].eps) return t('指定金额的合计超过了总额');
   }
   if (sp.mode === 'ratio') {
     const w = sp.members.reduce((s, id) => s + Math.max(0, sp.values[id] || 0), 0);
-    if (!(w > 0)) return '请填写每个人的比例（或各自点单金额）';
+    if (!(w > 0)) return t('请填写每个人的比例（或各自点单金额）');
   }
   return null;
 }
