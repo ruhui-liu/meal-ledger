@@ -31,6 +31,12 @@
       "name": "张宇帆",
       "short": "YF",
       "inactive": true
+    },
+    {
+      "id": "m_mw3stf0yk8j3",
+      "name": "梅腾",
+      "short": "MT",
+      "color": "#c2255c"
     }
   ],
   "methods": [
@@ -169,5 +175,5 @@
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-05T16:08:19.000Z"
+  "updatedAt": "2026-11-05T17:07:25.693Z"
 }
