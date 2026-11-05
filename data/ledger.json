@@ -9,7 +9,8 @@
     {
       "id": "t",
       "name": "王韬",
-      "short": "T"
+      "short": "WT",
+      "color": "#1c7ed6"
     },
     {
       "id": "rq",
@@ -176,5 +177,5 @@
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-05T17:07:43.204Z"
+  "updatedAt": "2026-11-05T17:07:47.096Z"
 }
