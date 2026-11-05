@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "members": [
+    {
+      "id": "rh",
+      "name": "Ruhui",
+      "short": "RH"
+    },
+    {
+      "id": "t",
+      "name": "Tao",
+      "short": "T"
+    },
+    {
+      "id": "rq",
+      "name": "Ruiqi",
+      "short": "RQ"
+    },
+    {
+      "id": "zq",
+      "name": "Zhaoqiang",
+      "short": "ZQ"
+    },
+    {
+      "id": "b",
+      "name": "Bo",
+      "short": "B"
+    }
+  ],
+  "methods": [
+    "现金",
+    "刷卡",
+    "支付宝",
+    "微信支付",
+    "PayPay",
+    "其他"
+  ],
+  "bills": [
+    {
+      "id": "carry_20260526_rh_jpy",
+      "kind": "carry",
+      "date": "2026-05-26",
+      "meal": "",
+      "title": "Excel 总账结转（截至 5/26，欠 Ruhui 的日元）",
+      "currency": "JPY",
+      "amount": 54952.06,
+      "payer": "rh",
+      "method": "",
+      "split": {
+        "mode": "amount",
+        "members": [
+          "t",
+          "rq"
+        ],
+        "values": {
+          "t": 37815.23,
+          "rq": 17136.83
+        }
+      },
+      "rate": 0.042619,
+      "rateDate": "2026-05-26",
+      "rateSource": "ECB",
+      "note": "来自 Excel「summary_26.01.15~26.05.26」的「总净额结算」(to RH JPY)，已是两两抵消后的净额。",
+      "createdAt": "2026-11-05T15:44:35.000Z",
+      "createdBy": "rh"
+    },
+    {
+      "id": "carry_20260526_rh_cny",
+      "kind": "carry",
+      "date": "2026-05-26",
+      "meal": "",
+      "title": "Excel 总账结转（截至 5/26，欠 Ruhui 的人民币）",
+      "currency": "CNY",
+      "amount": 3747.78,
+      "payer": "rh",
+      "method": "",
+      "split": {
+        "mode": "amount",
+        "members": [
+          "t",
+          "rq",
+          "zq",
+          "b"
+        ],
+        "values": {
+          "t": 1160.07,
+          "rq": 1042.2,
+          "zq": 1333.82,
+          "b": 211.69
+        }
+      },
+      "rate": 0.042619,
+      "rateDate": "2026-05-26",
+      "rateSource": "ECB",
+      "note": "来自 Excel「summary_26.01.15~26.05.26」的「总净额结算」(to RH CNY)，已是两两抵消后的净额。",
+      "createdAt": "2026-11-05T15:44:35.000Z",
+      "createdBy": "rh"
+    },
+    {
+      "id": "carry_20260526_zq_jpy",
+      "kind": "carry",
+      "date": "2026-05-26",
+      "meal": "",
+      "title": "Excel 总账结转（截至 5/26，欠 Zhaoqiang 的日元）",
+      "currency": "JPY",
+      "amount": 50619.58,
+      "payer": "zq",
+      "method": "",
+      "split": {
+        "mode": "amount",
+        "members": [
+          "rh",
+          "t",
+          "rq",
+          "b"
+        ],
+        "values": {
+          "rh": 20339.75,
+          "t": 9592.75,
+          "rq": 14743.08,
+          "b": 5944
+        }
+      },
+      "rate": 0.042619,
+      "rateDate": "2026-05-26",
+      "rateSource": "ECB",
+      "note": "来自 Excel「summary_26.01.15~26.05.26」的「总净额结算」(to ZQ JPY)，已是两两抵消后的净额。",
+      "createdAt": "2026-11-05T15:44:35.000Z",
+      "createdBy": "rh"
+    },
+    {
+      "id": "b_x2026052903",
+      "kind": "meal",
+      "date": "2026-05-29",
+      "meal": "晚餐",
+      "title": "一风堂",
+      "currency": "JPY",
+      "amount": 6080,
+      "payer": "zq",
+      "method": "",
+      "split": {
+        "mode": "amount",
+        "members": [
+          "rh",
+          "rq",
+          "zq",
+          "b"
+        ],
+        "values": {
+          "rh": 1090,
+          "rq": 1620,
+          "zq": 1880,
+          "b": 1490
+        }
+      },
+      "rate": 0.042487,
+      "rateDate": "2026-05-29",
+      "rateSource": "ECB",
+      "note": "",
+      "createdAt": "2026-11-05T15:44:35.000Z",
+      "createdBy": "rh"
+    },
+    {
+      "id": "b_x2026053004",
+      "kind": "meal",
+      "date": "2026-05-30",
+      "meal": "晚餐",
+      "title": "MOMO",
+      "currency": "JPY",
+      "amount": 22000,
+      "payer": "rh",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "rq",
+          "zq",
+          "b"
+        ]
+      },
+      "rate": 0.042487,
+      "rateDate": "2026-05-29",
+      "rateSource": "ECB",
+      "note": "",
+      "createdAt": "2026-11-05T15:44:35.000Z",
+      "createdBy": "rh"
+    }
+  ],
+  "payments": [],
+  "updatedAt": "2026-11-05T15:44:35.000Z"
+}
