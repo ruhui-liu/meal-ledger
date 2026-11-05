@@ -440,13 +440,14 @@ function renderBillList() {
   }).join('');
 }
 
+const dow = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).getDay(); };
 function billRow(b) {
   const carry = b.kind === 'carry';
   const tag = carry ? `<span class="tag carry">${t('结转')}</span>` : b.meal ? `<span class="tag">${tm(b.meal)}</span>` : '';
   const n = b.split.members.length;
   const sub = carry ? t('{n} 人欠 {name}', { n, name: nmShort(b.payer) }) : `${t('{payer} 付', { payer: nmShort(b.payer) })}${b.method ? ' · ' + tm(b.method) : ''} · ${t('{n} 人', { n })}`;
   return `<div class="item" data-act="openBill" data-arg="${b.id}" role="button" tabindex="0">
-    <div class="item-d"><b>${fmtDateShort(b.date)}</b><small>${weekday(b.date)}</small></div>
+    <div class="item-d wd-${dow(b.date)}"><b>${fmtDateShort(b.date)}</b><small>${weekday(b.date)}</small></div>
     <div class="item-m"><div class="item-t">${tag}${titleOf(b)}</div>
       <div class="item-s">${sub}</div>
       <div class="avs">${b.split.members.map((id) => av(id, 'xs')).join('')}</div></div>
@@ -455,7 +456,7 @@ function billRow(b) {
 function payRow(p) {
   const cr = C.creditOf(p, C.rateOf(p, D()));
   return `<div class="item" data-act="openPay" data-arg="${p.id}" role="button" tabindex="0">
-    <div class="item-d"><b>${fmtDateShort(p.date)}</b><small>${weekday(p.date)}</small></div>
+    <div class="item-d wd-${dow(p.date)}"><b>${fmtDateShort(p.date)}</b><small>${weekday(p.date)}</small></div>
     <div class="item-m"><div class="item-t"><span class="tag pay">${t('还款')}</span>${nm(p.from)} → ${nm(p.to)}</div>
       <div class="item-s">${p.method ? tm(p.method) : t('未记录方式')}${cr.cur !== p.currency ? ` · ${t('抵扣 {amt}', { amt: moneyText(cr.amt, cr.cur) })}` : ''}${p.note ? ' · ' + esc(p.note) : ''}</div></div>
     <div class="item-r pos">${money(p.amount, p.currency)}</div></div>`;
