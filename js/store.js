@@ -90,6 +90,7 @@ export function applyOp(d, op) {
     case 'delMember': d.members = d.members.filter((x) => x.id !== op.id); break;
     case 'setMethods': d.methods = op.v; break;
     case 'replaceAll': return normalize(clone(op.v));
+    case 'batch': for (const o of op.ops) d = applyOp(d, o); break;
   }
   return d;
 }
@@ -309,6 +310,49 @@ async function doFlush() {
     return false;
   }
   return true;
+}
+
+// ---------- 图片（收款码、小票）：作为单独文件存进仓库，账本里只记路径 ----------
+const dataDir = (c) => c.path.replace(/[^/]*$/, '');
+/** 上传一张图片（data URL），返回账本里保存的引用。本地模式直接返回 data URL */
+export async function putMedia(dataUrl, folder) {
+  if (state.mode === 'readonly') throw new Error(t('只读模式：请先在「设置」里填写 GitHub Token'));
+  if (state.mode === 'local') return dataUrl;
+  const c = getConfig();
+  const ref = `media/${folder}/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}.jpg`;
+  const url = `https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${(dataDir(c) + ref).split('/').map(encodeURIComponent).join('/')}`;
+  const res = await fetch(url, {
+    method: 'PUT', headers: { ...headers(c), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: `上传图片 ${ref}`, content: dataUrl.split(',')[1], branch: c.branch }),
+  });
+  if (!res.ok) throw new HttpError(res.status, await errText(res));
+  return ref;
+}
+/** 图片引用 → 可显示的地址 */
+export function mediaUrl(ref) {
+  if (!ref) return '';
+  if (/^data:image\//.test(ref)) return ref;
+  const c = getConfig();
+  if (!c.owner) return './' + dataDir(c) + ref;
+  return `https://raw.githubusercontent.com/${c.owner}/${c.repo}/${c.branch}/${dataDir(c)}${ref}`;
+}
+
+// ---------- 操作历史 ----------
+/** 账本文件最近的提交记录 */
+export async function history(limit = 40) {
+  const c = getConfig();
+  if (!c.owner) return null;
+  const res = await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/commits?path=${encodeURIComponent(c.path)}&sha=${encodeURIComponent(c.branch)}&per_page=${limit}&_=${Date.now()}`, { headers: headers(c), cache: 'no-store' });
+  if (!res.ok) throw new HttpError(res.status, await errText(res));
+  return (await res.json()).map((x) => ({
+    sha: x.sha, parent: x.parents?.[0]?.sha || null, message: x.commit.message.split('\n')[0],
+    date: x.commit.author?.date || x.commit.committer?.date, author: x.author?.login || x.commit.author?.name || '',
+  }));
+}
+/** 某次提交时的账本内容 */
+export async function ledgerAt(sha) {
+  const r = await ghGet({ ...getConfig(), branch: sha });
+  return normalize(r.data || emptyData());
 }
 
 /** 放弃本机还没同步的修改 */

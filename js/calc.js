@@ -275,3 +275,15 @@ export function stats(data, range = {}) {
   }
   return { per, total, methods, places };
 }
+
+/** 每月消费合计（换算成 cur，不含期初结转） */
+export function monthly(data, cur) {
+  const R = resolver(data);
+  const out = {};
+  for (const b of data.bills) {
+    if (b.kind === 'carry') continue;
+    const k = b.date.slice(0, 7);
+    out[k] = (out[k] || 0) + convert(b.amount, b.currency, cur, R(b));
+  }
+  return out;
+}

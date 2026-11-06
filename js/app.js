@@ -35,26 +35,31 @@ const av = (id, cls = '') => {
   const inner = avatarOk(m.avatar) ? `<img src="${m.avatar}" alt="" loading="lazy" decoding="async">` : esc(m.short || m.name.slice(0, 2));
   return `<span class="av ${cls}${avatarOk(m.avatar) ? ' has-img' : ''}" style="--c:${color(id)}" title="${esc(m.name)}">${inner}</span>`;
 };
-/** 读取图片 → 居中裁成正方形 → 缩到 128px → JPEG data URL */
-function resizeAvatar(file, size = 128) {
+/** 读取图片并压缩成 JPEG data URL。square=true 时居中裁成正方形 */
+function resizeImage(file, { max = 128, square = false, quality = 0.82 } = {}) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      const s = Math.min(img.naturalWidth, img.naturalHeight);
+      const W = img.naturalWidth, H = img.naturalHeight;
+      const s = Math.min(W, H);
+      const [sx, sy, sw, sh] = square ? [(W - s) / 2, (H - s) / 2, s, s] : [0, 0, W, H];
+      const k = Math.min(1, max / Math.max(sw, sh));
       const c = document.createElement('canvas');
-      c.width = c.height = size;
+      c.width = Math.round(sw * k); c.height = Math.round(sh * k);
       const ctx = c.getContext('2d');
       ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
       URL.revokeObjectURL(url);
-      resolve(c.toDataURL('image/jpeg', 0.82));
+      resolve(c.toDataURL('image/jpeg', quality));
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(t('照片读取失败'))); };
     img.src = url;
   });
 }
+const resizeAvatar = (file) => resizeImage(file, { max: 128, square: true });
+const QR_KINDS = ['PayPay', '微信支付', '支付宝'];
 const nm = (id) => esc(mem(id).name);
 const nmShort = (id) => esc(mem(id).short || mem(id).name);
 const curName = (c) => t(CUR[c].name);
@@ -136,6 +141,64 @@ function syncErrorNote() {
     <button class="btn-mini" data-act="refresh">${t('重试')}</button></div>`;
 }
 
+// ---------------- 查看大图 / 收款码 / 分享 ----------------
+function viewImage(src, title = '') {
+  openModal(`${title ? `<h2 class="sheet-t">${esc(title)}</h2>` : ''}<img class="viewer" src="${esc(src)}" alt="">`);
+}
+function qrButtons(id) {
+  const qr = mem(id).qr || {};
+  const ks = QR_KINDS.filter((k) => qr[k]);
+  if (!ks.length) return '';
+  return `<div class="qr-row"><span class="muted small">${t('{name} 的收款码', { name: nm(id) })}</span>${ks.map((k) => `<button type="button" class="btn-mini" data-act="viewImg" data-src="${esc(S.mediaUrl(qr[k]))}" data-title="${esc(mem(id).name + ' · ' + t(k))}">${tm(k)}</button>`).join('')}</div>`;
+}
+const siteUrl = () => location.origin + location.pathname;
+const amtText = (a) => CURS.filter((c) => a[c] && !isZero(a[c], c)).map((c) => moneyText(a[c], c)).join(' + ');
+function shareSheet(title, text) {
+  openModal(`<h2 class="sheet-t">${esc(title)}</h2>
+    <p class="muted small">${t('可以先改一改，再复制或分享。')}</p>
+    <textarea id="shareText" rows="${Math.min(14, text.split('\n').length + 1)}">${esc(text)}</textarea>
+    <div class="sheet-actions"><button class="btn primary" id="copyBtn">${t('复制')}</button>${navigator.share ? `<button class="btn" id="shareBtn">${t('分享到…')}</button>` : ''}</div>`, (sheet) => {
+    const ta = sheet.querySelector('#shareText');
+    sheet.querySelector('#copyBtn').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(ta.value); } catch { ta.select(); document.execCommand('copy'); }
+      toast(t('已复制，可以粘贴到微信 / LINE 了'), 'ok');
+    });
+    sheet.querySelector('#shareBtn')?.addEventListener('click', () => navigator.share({ text: ta.value }).catch(() => {}));
+  });
+}
+function balanceMessage() {
+  const { rows, mode, algo } = debtRowsNow();
+  const lines = [`${t('饭账本')} · ${t('截至 {date}', { date: fmtDate(today()) })}`,
+    `${t({ split: '分币种', CNY: '全换成人民币', JPY: '全换成日元' }[mode])} · ${t(algo === 'simple' ? '最少转账' : '两两抵消')}`, ''];
+  if (!rows.length) lines.push(t('全部结清'));
+  for (const r of rows) lines.push(`${mem(r.from).name} → ${mem(r.to).name}：${amtText(r.amts)}`);
+  lines.push('', `${t('明细')}：${siteUrl()}`);
+  return lines.join('\n');
+}
+function remindMessage(debtor, creditor, a) {
+  const qr = QR_KINDS.filter((k) => (mem(creditor).qr || {})[k]).map((k) => t(k));
+  return [t('{a}，截至 {date}，你还欠 {b} {amt}。', { a: mem(debtor).name, date: fmtDate(today()), b: mem(creditor).name, amt: amtText(a) }),
+    qr.length ? t('可以用 {methods} 转账，收款码在饭账本里：', { methods: qr.join(' / ') }) : t('明细可以在饭账本里查看：'),
+    siteUrl()].join('\n');
+}
+/** 两人之间按币种的直接欠款（分币种、两两抵消） */
+const pairDebts = (a, b) => C.debtsPairwise(D(), 'split').filter((x) => (x.from === a && x.to === b) || (x.from === b && x.to === a));
+
+// ---------------- 图表提示气泡（悬停 / 点按） ----------------
+const tipEl = document.createElement('div');
+tipEl.className = 'viz-tip';
+document.body.appendChild(tipEl);
+function showTip(el) {
+  tipEl.textContent = el.dataset.tip;
+  tipEl.style.display = 'block';
+  const r = el.getBoundingClientRect(), w = tipEl.offsetWidth;
+  tipEl.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+  tipEl.style.top = Math.max(8, r.top - tipEl.offsetHeight - 8) + 'px';
+}
+document.addEventListener('pointerover', (e) => { const el = e.target.closest?.('[data-tip]'); if (el) showTip(el); });
+document.addEventListener('pointerout', (e) => { if (e.target.closest?.('[data-tip]')) tipEl.style.display = 'none'; });
+document.addEventListener('scroll', () => (tipEl.style.display = 'none'), { passive: true });
+
 // ---------------- 语言 ----------------
 function applyStaticText() {
   document.title = t('饭账本');
@@ -177,6 +240,7 @@ function render(parts = parseHash().parts, params = parseHash().params) {
     case 'pay': return renderPayForm(parts[1], params);
     case 'stats': return renderStats();
     case 'settings': return renderSettings();
+    case 'history': return renderHistory();
     default: return renderBalances();
   }
 }
@@ -239,6 +303,47 @@ const ACTIONS = {
   },
   setMe: (id) => { S.saveConfig({ me: id }); toast(t('已设定：我是 {name}', { name: mem(id).name })); render(); },
   setLang: (l) => switchLang(l),
+  viewImg: (arg, el) => viewImage(el.dataset.src, el.dataset.title || ''),
+  shareBalances: () => shareSheet(t('结算消息'), balanceMessage()),
+  remind: (arg) => {
+    const [debtor, creditor] = arg.split('|');
+    const a = {}; pairDebts(debtor, creditor).filter((x) => x.from === debtor).forEach((x) => (a[x.cur] = x.amt));
+    shareSheet(t('催款消息'), remindMessage(debtor, creditor, a));
+  },
+  settlePair: async (arg) => {
+    const [a, b] = arg.split('|');
+    const pd = pairDebts(a, b);
+    if (!pd.length) return;
+    const list = pd.map((x) => `${mem(x.from).name} → ${mem(x.to).name}：${moneyText(x.amt, x.cur)}`).join('\n');
+    if (!confirm(t('记录以下还款，把两人之间的账全部结清？') + '\n\n' + list)) return;
+    const now = nowISO(), me = myId();
+    const ops = pd.map((x) => ({ t: 'putPayment', v: { id: uid('p'), date: today(), from: x.from, to: x.to, currency: x.cur, amount: roundCur(x.amt, x.cur), method: '', note: t('一键结清'), createdAt: now, createdBy: me, updatedAt: now } }));
+    closeModal();
+    await save({ t: 'batch', ops }, `结清 ${mem(a).short}↔${mem(b).short}`);
+  },
+  undo: async (arg, el) => {
+    const [sha, parent] = arg.split('|');
+    const msg = (el.dataset.msg || '').replace(/ \(by [^)]*\)$/, '');
+    let after, before;
+    try { toast(t('正在读取这次修改…')); [after, before] = await Promise.all([S.ledgerAt(sha), S.ledgerAt(parent)]); }
+    catch (e) { return toast(e.message, 'err'); }
+    const cur = D(), ops = [];
+    let n = 0, conflict = 0;
+    for (const [col, put, del] of [['bills', 'putBill', 'delBill'], ['payments', 'putPayment', 'delPayment'], ['members', 'putMember', 'delMember']]) {
+      const A = new Map(after[col].map((x) => [x.id, x])), B = new Map(before[col].map((x) => [x.id, x])), N = new Map(cur[col].map((x) => [x.id, x]));
+      for (const id of new Set([...A.keys(), ...B.keys()])) {
+        const x = A.get(id), y = B.get(id);
+        if (JSON.stringify(x) === JSON.stringify(y)) continue;
+        n++;
+        if (JSON.stringify(N.get(id)) !== JSON.stringify(x)) conflict++;
+        ops.push(y ? { t: put, v: y } : { t: del, id });
+      }
+    }
+    if (JSON.stringify(after.methods) !== JSON.stringify(before.methods)) { n++; ops.push({ t: 'setMethods', v: before.methods }); }
+    if (!n) return toast(t('这次修改没有可撤销的账目变化'));
+    if (!confirm(t('撤销「{msg}」？会还原 {n} 条记录。', { msg, n }) + (conflict ? '\n\n' + t('注意：其中 {c} 条之后又被改过，撤销会覆盖之后的修改。', { c: conflict }) : ''))) return;
+    await save({ t: 'batch', ops }, `撤销：${msg}`);
+  },
   setTheme: (th) => {
     try { localStorage.setItem('fz.theme', th); } catch { /* ignore */ }
     document.documentElement.dataset.theme = th;
@@ -326,6 +431,25 @@ function debtRow(r, show) {
   </div>`;
 }
 
+function debtRowsNow() {
+  const d = D(), me = myId();
+  const mode = prefs.balMode, algo = prefs.balAlgo, scope = me ? prefs.balScope : 'all';
+  const rr = refRate();
+  let rows = groupDebts(algo === 'simple' ? C.debtsSimplified(d, mode) : C.debtsPairwise(d, mode)).sort((a, b) => magnitude(b.amts, rr) - magnitude(a.amts, rr));
+  if (scope === 'me') rows = rows.filter((r) => r.from === me || r.to === me);
+  return { rows, mode, algo };
+}
+function nextPayerCard(d) {
+  const net = C.netByMember(d, 'CNY');
+  let best = null;
+  for (const m of d.members.filter((x) => !x.inactive)) {
+    const v = net[m.id]?.CNY || 0;
+    if (!best || v < best.v) best = { id: m.id, v };
+  }
+  if (!best) return '';
+  const sub = best.v < -0.5 ? t('按人民币换算，TA 目前净欠 {amt}，由 TA 请客最能把账抵平', { amt: moneyText(-best.v, 'CNY') }) : t('大家基本都结清了，谁付都行');
+  return `<section class="card next-card"><div class="next-in">${av(best.id)}<div><small class="muted">${t('下次建议由')}</small><b>${t('{name} 付', { name: nm(best.id) })}</b><small class="muted">${sub}</small></div></div></section>`;
+}
 function renderBalances() {
   const d = D(), me = myId();
   if (!d.members.length) {
@@ -376,9 +500,10 @@ function renderBalances() {
       <div class="chips">${d.members.filter((m) => !m.inactive).map((m) => `<button class="chip-btn" data-act="setMe" data-arg="${m.id}">${av(m.id, 'xs')}${nm(m.id)}</button>`).join('')}</div></section>` : '';
 
   $view.innerHTML = `
-    <div class="page-h"><h1>${t('谁该给谁多少')}</h1></div>
+    <div class="page-h"><h1>${t('谁该给谁多少')}</h1><button class="btn sm" data-act="shareBalances">${t('复制结算消息')}</button></div>
     ${syncErrorNote()}
     ${whoAmI}
+    ${prefs.showNext !== 'off' ? nextPayerCard(d) : ''}
     <div class="controls">
       ${seg('balMode', [['split', t('分币种')], ['CNY', t('全换成人民币')], ['JPY', t('全换成日元')]], mode, { pref: true })}
       <div class="controls-row">
@@ -416,7 +541,18 @@ function openPair(a, b) {
   openModal(`<h2 class="sheet-t">${av(a)} ${nm(a)} <span class="muted">${t('和')}</span> ${av(b)} ${nm(b)}</h2>
     <div class="pair-tot">${totHtml}</div>
     <p class="muted small">${t('+ 表示 {a} 欠 {b} 的钱增加，− 表示减少', { a: nm(a), b: nm(b) })}${mode !== 'split' ? t('（已按各自日期汇率换算成{cur}）', { cur: curName(mode) }) : ''}${getLang() === 'en' ? '.' : '。'}</p>
+    ${pairActions(a, b)}
     <div class="list">${items || `<p class="muted pad">${t('没有往来记录')}</p>`}</div>`);
+}
+function pairActions(a, b) {
+  const pd = pairDebts(a, b);
+  if (!pd.length) return '';
+  const debtors = [...new Set(pd.map((x) => x.from))];
+  const creditors = [...new Set(pd.map((x) => x.to))];
+  return `<div class="pair-actions">
+    ${S.canWrite() ? `<button class="btn sm primary" data-act="settlePair" data-arg="${a}|${b}">${t('全部结清')}</button>` : ''}
+    ${debtors.map((x) => `<button class="btn sm" data-act="remind" data-arg="${x}|${x === a ? b : a}">${t('提醒 {name} 还钱', { name: nm(x) })}</button>`).join('')}
+  </div>${creditors.map((x) => qrButtons(x)).join('')}`;
 }
 
 // ================= 账目列表 =================
@@ -484,7 +620,7 @@ function billRow(b) {
   const carry = b.kind === 'carry';
   const tag = carry ? `<span class="tag carry">${t('结转')}</span>` : b.meal ? `<span class="tag">${tm(b.meal)}</span>` : '';
   const n = b.split.members.length;
-  const sub = carry ? t('{n} 人欠 {name}', { n, name: nmShort(b.payer) }) : `${t('{payer} 付', { payer: nmShort(b.payer) })}${b.method ? ' · ' + tm(b.method) : ''} · ${t('{n} 人', { n })}`;
+  const sub = carry ? t('{n} 人欠 {name}', { n, name: nmShort(b.payer) }) : `${t('{payer} 付', { payer: nmShort(b.payer) })}${b.method ? ' · ' + tm(b.method) : ''} · ${t('{n} 人', { n })}${b.photos?.length ? ' · ' + t('有小票') : ''}`;
   return `<div class="item" data-act="openBill" data-arg="${b.id}" role="button" tabindex="0">
     <div class="item-d wd-${dow(b.date)}"><b>${fmtDateShort(b.date)}</b><small>${weekday(b.date)}</small></div>
     <div class="item-m"><div class="item-t">${tag}${titleOf(b)}</div>
@@ -530,6 +666,7 @@ function openBill(id) {
     </dl>
     <h3>${t('{n} 人分摊', { n: b.split.members.length })}${payerIn ? '' : t('（付款人没有参与）')}</h3>
     <div class="shares">${rows}</div>
+    ${b.photos?.length ? `<h3>${t('小票照片')}</h3><div class="photo-grid">${b.photos.map((r) => `<button class="photo" data-act="viewImg" data-src="${esc(S.mediaUrl(r))}" data-title="${esc(b.title || '')}"><img src="${esc(S.mediaUrl(r))}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
     ${b.note ? `<p class="note">${esc(b.note)}</p>` : ''}
     <p class="muted small">${creator ? t('由 {name} 记录 · ', { name: esc(creator) }) : ''}${b.createdAt ? new Date(b.createdAt).toLocaleString() : ''}</p>
     ${S.canWrite() ? `<div class="sheet-actions">
@@ -612,6 +749,8 @@ function renderBillForm(editId, params = {}) {
   }
   if (!isManual(f)) Object.assign(f, { rate: null, rateSource: null });
   delete f.rateDate;
+  f.photos = editId && src ? [...(src.photos || [])] : [];
+  f.newPhotos = [];
   const shownIds = [...new Set([...active, ...f.split.members, f.payer].filter(Boolean))];
   const titles = [...new Set(d.bills.filter((b) => b.kind !== 'carry').sort((a, b) => (a.date < b.date ? 1 : -1)).map((b) => b.title).filter(Boolean))].slice(0, 40);
   const methods = [...new Set([...d.methods, f.method].filter(Boolean))];
@@ -644,6 +783,7 @@ function renderBillForm(editId, params = {}) {
         <div id="splitRows" class="split-rows"></div>
       </div>
       <div class="field"><span class="lbl">${t('汇率（按消费日的银联汇率，用于换算）')}</span><div class="rate-box" id="rateBox"></div></div>
+      <div class="field"><span class="lbl">${t('小票照片')} <small class="muted">${t('（可选，最多 4 张）')}</small></span><div class="photo-grid edit" id="photos"></div></div>
       <label class="field"><span class="lbl">${t('备注')}</span><textarea name="note" rows="2" placeholder="${t('可选')}">${esc(f.note || '')}</textarea></label>
       <div class="form-actions"><button type="submit" class="btn primary block" ${S.canWrite() ? '' : 'disabled'}>${t(editId ? '保存修改' : '保存')}</button>
         ${editId ? `<a class="btn block" href="#/bills">${t('取消')}</a>` : ''}</div>
@@ -714,6 +854,11 @@ function renderBillForm(editId, params = {}) {
     } else hint.innerHTML = t('填每个人的比例或各自点单的价格，总额按比例分摊（适合用人民币刷卡、按日元菜价分的情况）');
   }
   function renderRate() { $('#rateBox').innerHTML = rateBoxHtml(f, rateEditing); }
+  function renderPhotos() {
+    const all = [...f.photos.map((r, i) => ['old', i, S.mediaUrl(r)]), ...f.newPhotos.map((u, i) => ['new', i, u])];
+    $('#photos').innerHTML = all.map(([k, i, u]) => `<div class="photo"><img src="${esc(u)}" alt=""><button type="button" class="photo-x" data-f="rmPhoto" data-k="${k}" data-i="${i}" aria-label="${t('删除')}">×</button></div>`).join('')
+      + (all.length < 4 && S.canWrite() ? `<label class="photo add">＋<input type="file" id="photoFile" accept="image/*" multiple hidden></label>` : '');
+  }
   function addMemberHere(where) {
     editMember(null, (m) => {
       shownIds.push(m.id);
@@ -728,6 +873,14 @@ function renderBillForm(editId, params = {}) {
   let snap = '';
   const snapshot = () => [f.split.members.join(), f.split.mode, f.date, f.currency].join('#');
   function onInput(e) {
+    if (e.target.id === 'photoFile') {
+      if (e.type !== 'change') return;
+      const files = [...e.target.files].slice(0, 4 - f.photos.length - f.newPhotos.length);
+      Promise.all(files.map((x) => resizeImage(x, { max: 1280, quality: 0.8 })))
+        .then((urls) => { f.newPhotos.push(...urls); renderPhotos(); })
+        .catch((err) => toast(err.message, 'err'));
+      return;
+    }
     if (e.target.name === 'rateManual') {
       const v = parseNum(e.target.value) / 100;
       if (v > 0) { f.rate = v; f.rateSource = 'manual'; updateRateText(form, f); updateShares(); }
@@ -757,6 +910,7 @@ function renderBillForm(editId, params = {}) {
     if (act === 'editRate') { rateEditing = true; renderRate(); $('[name=rateManual]').focus(); }
     if (act === 'autoRate') { f.rate = null; f.rateSource = null; rateEditing = false; renderRate(); updateShares(); }
     if (act === 'addMember') addMemberHere(b.dataset.where);
+    if (act === 'rmPhoto') { (b.dataset.k === 'old' ? f.photos : f.newPhotos).splice(+b.dataset.i, 1); renderPhotos(); }
   });
 
   form.addEventListener('submit', async (e) => {
@@ -775,6 +929,16 @@ function renderBillForm(editId, params = {}) {
     const label = btn.textContent;
     btn.disabled = true;
     btn.textContent = t('保存中…');
+    try {
+      const up = [];
+      for (const u of f.newPhotos) up.push(await S.putMedia(u, 'receipts'));
+      bill.photos = [...f.photos, ...up];
+      f.photos = bill.photos; f.newPhotos = [];
+    } catch (err) {
+      btn.disabled = false; btn.textContent = label;
+      return toast(t('小票照片上传失败：') + err.message, 'err');
+    }
+    if (!bill.photos.length) delete bill.photos;
     const ok = await save({ t: 'putBill', v: bill }, `${editId ? '修改' : '记账'} ${bill.date} ${bill.title || ''} ${bill.amount}${bill.currency}`);
     btn.disabled = false;
     btn.textContent = label;
@@ -785,6 +949,7 @@ function renderBillForm(editId, params = {}) {
   snap = snapshot();
   renderSplitRows();
   renderRate();
+  renderPhotos();
 }
 
 // ================= 还款 =================
@@ -815,7 +980,7 @@ function renderPayForm(editId, params = {}) {
       <p class="muted small">${t('谁把钱还给了谁。保存后，对应的欠款会自动减少。')}</p>
       <label class="field"><span class="lbl">${t('日期')}</span><input type="date" name="date" value="${f.date}"></label>
       <div class="field"><span class="lbl">${t('谁还钱（付款）')}</span><div id="fromBox">${withAdd(chips('from', memberOpts(shownIds), f.from), 'from')}</div></div>
-      <div class="field"><span class="lbl">${t('还给谁（收款）')}</span><div id="toBox">${withAdd(chips('to', memberOpts(shownIds), f.to), 'to')}</div></div>
+      <div class="field"><span class="lbl">${t('还给谁（收款）')}</span><div id="toBox">${withAdd(chips('to', memberOpts(shownIds), f.to), 'to')}</div><div id="qrBox"></div></div>
       <div class="field"><span class="lbl">${t('金额')}</span>
         <div class="amount-row">${curSeg(f.currency)}
           <div class="amount-wrap"><input name="amount" class="amount-input" inputmode="decimal" value="${esc(f.amount)}" placeholder="0"><span class="unit" id="unit">${unit(f.currency)}</span></div></div>
@@ -847,6 +1012,7 @@ function renderPayForm(editId, params = {}) {
     $('#creditBox').innerHTML = seg('credit', [['same', t('{cur}欠款', { cur: curName(f.currency) })], ['other', t('换算后抵{cur}欠款', { cur: curName(otherCur()) })]], f.credit);
   }
   function update() {
+    $('#qrBox').innerHTML = f.to ? qrButtons(f.to) : '';
     $('#unit').textContent = unit(f.currency);
     const amt = parseNum(f.amount);
     const ch = $('#creditHint');
@@ -989,10 +1155,71 @@ function renderStats() {
       <div><small>${t('聚餐 / 消费')}</small><div class="big"><span>${st.total.count}<small>${t(' 次')}</small></span></div></div>
       <div><small>${t('总花费')}</small><div class="big">${modeAmts(st.total.amt, mode)}</div></div>
     </section>
+    ${monthlyChart(d, mode)}
+    ${personChart(people, st, mode)}
     <section class="card"><h3>${t('每个人')}</h3>${personCards || `<p class="muted pad">${t('这段时间没有记录')}</p>`}</section>
     <section class="card"><h3>${t('支付方式')}</h3>${methodRows ? `<table class="tbl"><thead><tr><th>${t('方式')}</th><th class="r">${t('次数')}</th><th class="r">${t('金额')}</th></tr></thead><tbody>${methodRows}</tbody></table>` : noRec}</section>
     <section class="card"><h3>${t('常去的店')}</h3>${placeRows ? `<table class="tbl"><thead><tr><th>${t('地点')}</th><th class="r">${t('次数')}</th><th class="r">${t('金额')}</th></tr></thead><tbody>${placeRows}</tbody></table>` : noRec}</section>
     <p class="foot">${t('统计不包含「期初结转」。「垫付差额」= 付了 − 自己吃了，正数表示替别人垫的钱多。')}</p>`;
+}
+
+// ---------- 图表 ----------
+const lastMonths = (n) => {
+  const out = [], d = new Date(); d.setDate(1);
+  for (let i = 0; i < n; i++) { out.unshift(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); d.setMonth(d.getMonth() - 1); }
+  return out;
+};
+const monthLabel = (k) => (getLang() === 'en' ? fmtMonth(k).slice(0, 3) : `${+k.slice(5)}月`);
+function monthlyChart(d, mode) {
+  const cur = mode === 'CNY' ? 'CNY' : 'JPY';
+  const totals = C.monthly(d, cur);
+  const months = lastMonths(12);
+  const vals = months.map((k) => totals[k] || 0);
+  const max = Math.max(...vals);
+  if (!(max > 0)) return '';
+  const top = vals.indexOf(max);
+  return `<section class="card viz"><h3>${t('近 12 个月的聚餐花费')} <small class="muted">${t('（换算成{cur}）', { cur: curName(cur) })}</small></h3>
+    <div class="vchart" role="img" aria-label="${t('近 12 个月的聚餐花费')}">
+      ${months.map((k, i) => `<div class="vcol" data-tip="${esc(fmtMonth(k))}：${esc(moneyText(vals[i], cur))}">
+        ${i === top ? `<span class="vtop">${esc(moneyText(vals[i], cur))}</span>` : ''}
+        <div class="vbar" style="height:${vals[i] ? Math.max(2, (vals[i] / max) * 100) : 0}%"></div>
+        <span class="vlbl">${monthLabel(k)}</span></div>`).join('')}
+    </div></section>`;
+}
+function personChart(people, st, mode) {
+  if (!people.length) return '';
+  const cur = mode === 'CNY' ? 'CNY' : 'JPY';
+  const key = cur === 'CNY' ? 'toCNY' : 'toJPY';
+  const max = Math.max(...people.flatMap((m) => [st.per[m.id].paid[key], st.per[m.id].used[key]]));
+  if (!(max > 0)) return '';
+  const w = (v) => (v > 0 ? Math.max(1.5, (v / max) * 100) : 0);
+  return `<section class="card viz"><h3>${t('付了 vs 自己吃了')} <small class="muted">${t('（换算成{cur}）', { cur: curName(cur) })}</small></h3>
+    <div class="legend"><span><i class="sw s1"></i>${t('付了')}</span><span><i class="sw s2"></i>${t('自己吃了')}</span></div>
+    ${people.map((m) => {
+      const p = st.per[m.id].paid[key], u = st.per[m.id].used[key];
+      return `<div class="hrow"><div class="hname">${av(m.id, 'xs')}<span>${nm(m.id)}</span></div>
+        <div class="hbars"><div class="hbar s1" style="width:${w(p)}%" data-tip="${esc(mem(m.id).name)} · ${t('付了')}：${esc(moneyText(p, cur))}"></div>
+          <div class="hbar s2" style="width:${w(u)}%" data-tip="${esc(mem(m.id).name)} · ${t('自己吃了')}：${esc(moneyText(u, cur))}"></div></div>
+        <div class="hval"><span>${esc(moneyText(p, cur))}</span><span class="muted">${esc(moneyText(u, cur))}</span></div></div>`;
+    }).join('')}</section>`;
+}
+
+// ================= 操作历史 =================
+async function renderHistory() {
+  const w = S.canWrite();
+  $view.innerHTML = `<div class="page-h"><h1>${t('操作历史')}</h1><a class="btn sm" href="#/settings">${t('返回')}</a></div>
+    <p class="muted small" style="margin:-4px 4px 12px">${t('每次记账、修改、删除都会留下一条记录。撤销只还原那一次修改涉及的账目，之后的其他修改不受影响。')}</p>
+    <div id="histList"><div class="empty small"><p class="muted">${t('加载中…')}</p></div></div>`;
+  const el = document.getElementById('histList');
+  let list;
+  try { list = await S.history(); } catch (e) { el.innerHTML = `<div class="notice warn">${esc(e.message)}</div>`; return; }
+  if (current !== 'history' || !document.body.contains(el)) return;
+  if (!list) { el.innerHTML = `<div class="empty small"><p class="muted">${t('本地模式没有操作历史')}</p></div>`; return; }
+  el.innerHTML = `<section class="card list">${list.map((x) => `<div class="hist">
+      <div class="hist-m"><b>${esc(x.message)}</b><small class="muted">${new Date(x.date).toLocaleString()}${x.author ? ' · ' + esc(x.author) : ''}</small></div>
+      ${w && x.parent ? `<button class="btn-mini" data-act="undo" data-arg="${x.sha}|${x.parent}" data-msg="${esc(x.message)}">${t('撤销')}</button>` : ''}
+    </div>`).join('')}</section>
+    <p class="foot"><a href="https://github.com/${esc(S.getConfig().owner)}/${esc(S.getConfig().repo)}/commits/${esc(S.getConfig().branch)}" target="_blank" rel="noopener">${t('在 GitHub 上查看完整历史')}</a></p>`;
 }
 
 // ================= 设置 =================
@@ -1008,6 +1235,10 @@ function renderSettings() {
 
     <section class="card"><h3>${t('风格')} <small class="muted">${t('（只保存在这台设备）')}</small></h3>
       <div class="chips pad">${THEMES.map(([id, label]) => `<button class="chip-btn ${document.documentElement.dataset.theme === id ? 'on' : ''}" data-act="setTheme" data-arg="${id}">${t(label)}</button>`).join('')}</div>
+    </section>
+
+    <section class="card"><h3>${t('功能')}</h3>
+      <div class="pad setting-row"><span>${t('结算页显示「下次该谁付」')}</span>${seg('showNext', [['on', t('开')], ['off', t('关')]], prefs.showNext === 'off' ? 'off' : 'on', { pref: true, cls: 'sm' })}</div>
     </section>
 
     <section class="card"><h3>${t('我是谁')} <small class="muted">${t('（只保存在这台设备）')}</small></h3>
@@ -1044,7 +1275,7 @@ function renderSettings() {
 
     <section class="card"><h3>${t('数据')}</h3>
       <div class="btn-row pad"><button class="btn" data-act="exportJSON">${t('导出 JSON 备份')}</button><button class="btn" data-act="exportCSV">${t('导出 CSV（Excel 可打开）')}</button>
-        ${w ? `<button class="btn" data-act="importJSON">${t('从 JSON 恢复')}</button>` : ''}<button class="btn" data-act="refresh">${t('重新加载')}</button>
+        ${w ? `<button class="btn" data-act="importJSON">${t('从 JSON 恢复')}</button>` : ''}<a class="btn" href="#/history">${t('操作历史 / 撤销')}</a><button class="btn" data-act="refresh">${t('重新加载')}</button>
         ${st.pending ? `<button class="btn danger" data-act="discard">${t('放弃未同步的修改')}</button>` : ''}</div>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
       <p class="muted small pad">${t('汇率：银联当日 JPY→CNY 汇率，已更新到 <b>{date}</b>（GitHub Actions 每 3 小时自动拉取）。', { date: C.latestRateDate() || t('（未加载）') })}<br>${t('共 {a} 笔账、{b} 条还款、{c} 位成员。', { a: d.bills.length, b: d.payments.length, c: d.members.length })}${d.updatedAt ? ' ' + t('最后更新 {time}', { time: new Date(d.updatedAt).toLocaleString() }) : ''}</p>
@@ -1104,6 +1335,7 @@ function editMember(id, onSaved) {
   if (!m) return;
   const used = id && (d.bills.some((b) => b.payer === id || b.split.members.includes(id)) || d.payments.some((p) => p.from === id || p.to === id));
   let avatar = avatarOk(m.avatar) ? m.avatar : '';
+  const qr = { ...(m.qr || {}) }, qrNew = {};
   const avPreview = () => `<span class="av av-lg${avatar ? ' has-img' : ''}" style="--c:${m.color || (id ? color(id) : PALETTE[d.members.length % PALETTE.length])}">${avatar ? `<img src="${avatar}" alt="">` : esc(m.short || m.name.slice(0, 2) || '?')}</span>`;
   openModal(`<h2 class="sheet-t">${t(id ? '编辑成员' : '添加成员')}</h2>
     <form id="memForm" class="form compact">
@@ -1112,6 +1344,7 @@ function editMember(id, onSaved) {
           <label class="btn sm">${t(avatar ? '更换照片' : '上传照片')}<input type="file" id="avFile" accept="image/*" hidden></label>
           <button type="button" class="btn sm danger" id="avDel" ${avatar ? '' : 'hidden'}>${t('移除照片')}</button></div></div>
       <label class="field"><span class="lbl">${t('名字')}</span><input name="name" value="${esc(m.name)}" placeholder="${t('例如：张三')}" required></label>
+      <div class="field"><span class="lbl">${t('收款码')} <small class="muted">${t('（可选，别人还钱时可以直接扫）')}</small></span><div class="qr-edit" id="qrEdit"></div></div>
       <label class="field"><span class="lbl">${t('简称（头像上显示，1–3 个字）')}</span><input name="short" value="${esc(m.short)}" maxlength="3" placeholder="${t('例如：ZS（不填就用名字前两个字）')}"></label>
       <label class="field"><span class="lbl">${t('颜色')}</span><input name="color" type="color" value="${m.color || (id ? color(id) : PALETTE[d.members.length % PALETTE.length])}"></label>
       ${id ? `<label class="check"><input type="checkbox" name="inactive" ${m.inactive ? 'checked' : ''}> ${t('隐藏（毕业/不常来了：记账时不再默认显示，历史账目保留）')}</label>` : ''}
@@ -1132,6 +1365,28 @@ function editMember(id, onSaved) {
       e.target.value = '';
     });
     sheet.querySelector('#avDel').addEventListener('click', () => { avatar = ''; refreshAv(); });
+    const qrBox = sheet.querySelector('#qrEdit');
+    const renderQr = () => {
+      qrBox.innerHTML = QR_KINDS.map((k) => {
+        const src = qrNew[k] || (qr[k] ? S.mediaUrl(qr[k]) : '');
+        return `<div class="qr-slot"><div class="qr-thumb">${src ? `<img src="${esc(src)}" alt="">` : `<span class="muted">${tm(k)}</span>`}</div>
+          <b class="small">${tm(k)}</b>
+          <label class="btn-mini">${t(src ? '更换' : '上传')}<input type="file" accept="image/*" data-qr="${esc(k)}" hidden></label>
+          ${src ? `<button type="button" class="link" data-rmqr="${esc(k)}">${t('移除')}</button>` : ''}</div>`;
+      }).join('');
+    };
+    renderQr();
+    qrBox.addEventListener('change', async (e) => {
+      const k = e.target.dataset.qr;
+      if (!k || !e.target.files[0]) return;
+      try { qrNew[k] = await resizeImage(e.target.files[0], { max: 720, quality: 0.92 }); renderQr(); } catch (err) { toast(err.message, 'err'); }
+    });
+    qrBox.addEventListener('click', (e) => {
+      const k = e.target.closest('[data-rmqr]')?.dataset.rmqr;
+      if (!k) return;
+      e.preventDefault();
+      delete qrNew[k]; delete qr[k]; renderQr();
+    });
     fm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = fm.name.value.trim();
@@ -1141,6 +1396,16 @@ function editMember(id, onSaved) {
       if (!v.inactive) delete v.inactive;
       if (!v.avatar) delete v.avatar;
       if (!id && D().members.some((x) => x.name === name)) return toast(t('已经有叫 {name} 的成员了', { name }), 'err');
+      const sb = fm.querySelector('[type=submit]');
+      try {
+        sb.disabled = true; sb.textContent = t('保存中…');
+        for (const [k, u] of Object.entries(qrNew)) qr[k] = await S.putMedia(u, 'qr');
+      } catch (err) {
+        sb.disabled = false; sb.textContent = t('保存');
+        return toast(t('收款码上传失败：') + err.message, 'err');
+      }
+      v.qr = qr;
+      if (!Object.keys(v.qr).length) delete v.qr;
       closeModal();
       const saving = save({ t: 'putMember', v }, `${id ? '修改' : '添加'}成员 ${name}`);
       if (S.canWrite() && onSaved) onSaved(v); // 数据已在本机更新，表单里立即可选
@@ -1178,6 +1443,9 @@ function toCSV() {
 
 // ================= 启动 =================
 C.setRateTable(S.state.rates);
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 applyStaticText();
 renderSync();
 route();
