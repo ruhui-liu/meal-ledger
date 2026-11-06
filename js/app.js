@@ -13,7 +13,7 @@ const FORM_VIEWS = new Set(['add', 'edit', 'pay']);
 const THEMES = [['material', 'Google 简约（默认）'], ['ios', 'iOS 原生'], ['mint', '清爽薄荷绿'], ['night', '深色金融'], ['play', '活泼圆润'], ['oneui', '三星 One UI'], ['warm', '暖橙（原版）']];
 
 const prefs = Object.assign(
-  { balMode: 'split', balAlgo: 'pair', balScope: 'all', statsRange: 'all', statsMode: 'split', statsFrom: '', statsTo: '', billType: 'all', billPerson: '' },
+  { balMode: 'split', balAlgo: 'pair', balScope: 'all', statsRange: 'all', statsMode: 'split', statsFrom: '', statsTo: '', billType: 'all', billPerson: '', billRange: 'all', billFrom: '', billTo: '' },
   readLS('fz.prefs', {}),
 );
 const setPref = (k, v) => { prefs[k] = v; writeLS('fz.prefs', prefs); };
@@ -403,9 +403,12 @@ function renderBills() {
     <div class="controls">
       <input class="search" type="search" id="billSearch" placeholder="${t('搜索地点、备注、支付方式…')}" value="${esc(billQuery)}">
       ${seg('billType', [['all', t('全部')], ['meal', t('消费')], ['pay', t('还款')]], prefs.billType, { pref: true, cls: 'sm' })}
+      ${seg('billRange', RANGE_OPTS(), prefs.billRange, { pref: true, cls: 'sm' })}
+      ${prefs.billRange === 'custom' ? `<div class="controls-row"><input type="date" name="billFrom" data-pref value="${esc(prefs.billFrom)}"> ${t('至')} <input type="date" name="billTo" data-pref value="${esc(prefs.billTo)}"></div>` : ''}
       <div class="chips scroll">${[['', t('所有人')], ...d.members.map((m) => [m.id, `${av(m.id, 'xs')}${nm(m.id)}`])]
         .map(([v, l]) => `<label class="chip"><input type="radio" name="billPerson" value="${v}" data-pref ${prefs.billPerson === v ? 'checked' : ''}><span>${l}</span></label>`).join('')}</div>
     </div>
+    <div id="billSummary"></div>
     <div id="billList"></div>`;
   const input = document.getElementById('billSearch');
   input.addEventListener('input', () => { billQuery = input.value; renderBillList(); });
@@ -420,6 +423,9 @@ function renderBillList() {
   if (prefs.billType !== 'pay') items.push(...d.bills.map((b) => ({ k: 'bill', v: b })));
   if (prefs.billType !== 'meal') items.push(...d.payments.map((x) => ({ k: 'pay', v: x })));
   if (p) items = items.filter(({ k, v }) => (k === 'bill' ? v.payer === p || v.split.members.includes(p) : v.from === p || v.to === p));
+  const rg = rangeOf(prefs.billRange, prefs.billFrom, prefs.billTo);
+  if (rg.from) items = items.filter(({ v }) => v.date >= rg.from);
+  if (rg.to) items = items.filter(({ v }) => v.date <= rg.to);
   if (q) {
     items = items.filter(({ k, v }) => {
       const names = (k === 'bill' ? [v.payer, ...v.split.members] : [v.from, v.to]).map((id) => `${mem(id).name} ${mem(id).short}`).join(' ');
@@ -427,6 +433,14 @@ function renderBillList() {
     });
   }
   items.sort((a, b) => (a.v.date !== b.v.date ? (a.v.date < b.v.date ? 1 : -1) : (a.v.createdAt || '') < (b.v.createdAt || '') ? 1 : -1));
+  const sumEl = document.getElementById('billSummary');
+  const filtered = prefs.billRange !== 'all' || q || p || prefs.billType !== 'all';
+  if (filtered && items.length) {
+    const tot = {};
+    items.filter((x) => x.k === 'bill' && x.v.kind !== 'carry').forEach((x) => (tot[x.v.currency] = (tot[x.v.currency] || 0) + x.v.amount));
+    const range = rg.from || rg.to ? `${rg.from ? fmtDate(rg.from) : '…'} – ${rg.to ? fmtDate(rg.to > today() && prefs.billRange !== 'custom' ? today() : rg.to) : '…'} · ` : '';
+    sumEl.innerHTML = `<div class="filter-sum">${range}${t('共 {n} 条记录', { n: items.length })}${Object.keys(tot).length ? ' · ' + t('消费合计 {amt}', { amt: amts(tot) }) : ''}</div>`;
+  } else sumEl.innerHTML = '';
   const el = document.getElementById('billList');
   if (!items.length) { el.innerHTML = `<div class="empty small"><p class="muted">${t(d.bills.length ? '没有符合条件的记录' : '还没有记录')}</p></div>`; return; }
   const groups = new Map();
@@ -902,18 +916,21 @@ function renderPayForm(editId, params = {}) {
 }
 
 // ================= 统计 =================
-function statsRange() {
+const monthEnd = (ym) => { const [yy, mm] = ym.split('-').map(Number); return `${ym}-${String(new Date(yy, mm, 0).getDate()).padStart(2, '0')}`; };
+function rangeOf(kind, from, to) {
   const td = today(), y = td.slice(0, 4), m = td.slice(0, 7);
   const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
   const lm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  switch (prefs.statsRange) {
+  switch (kind) {
     case 'year': return { from: `${y}-01-01`, to: `${y}-12-31` };
-    case 'month': return { from: `${m}-01`, to: `${m}-31` };
-    case 'lastMonth': return { from: `${lm}-01`, to: `${lm}-31` };
-    case 'custom': return { from: prefs.statsFrom || '', to: prefs.statsTo || '' };
+    case 'month': return { from: `${m}-01`, to: monthEnd(m) };
+    case 'lastMonth': return { from: `${lm}-01`, to: monthEnd(lm) };
+    case 'custom': return { from: from || '', to: to || '' };
     default: return {};
   }
 }
+const statsRange = () => rangeOf(prefs.statsRange, prefs.statsFrom, prefs.statsTo);
+const RANGE_OPTS = () => [['all', t('全部')], ['month', t('本月')], ['lastMonth', t('上月')], ['year', t('今年')], ['custom', t('自定义')]];
 function renderStats() {
   const d = D();
   const range = statsRange();

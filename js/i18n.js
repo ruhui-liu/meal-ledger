@@ -138,6 +138,8 @@ const EN = {
   '没有符合条件的记录': 'No matching records',
   '还没有记录': 'No records yet',
   '{n} 笔消费': '{n} {n|meal|meals}',
+  '共 {n} 条记录': '{n} {n|record|records}',
+  '消费合计 {amt}': 'meals total {amt}',
   '{n} 人欠 {name}': '{n} {n|person owes|people owe} {name}',
   '{payer} 付': '{payer} paid',
   '未记录方式': 'Method not recorded',
