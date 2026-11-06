@@ -697,6 +697,8 @@ function openPayment(id) {
 }
 
 // ================= 记一笔 =================
+const DRAFT_KEY = () => 'fz.draft';
+const normTitle = (s) => String(s || '').replace(/\s+/g, '').toLowerCase();
 const mealOfHour = (h) => (h < 4 ? '夜宵' : h < 10 ? '早餐' : h < 16 ? '午餐' : h < 22 ? '晚餐' : '夜宵');
 function guessMeal() {
   return mealOfHour(new Date().getHours());
@@ -752,6 +754,12 @@ function renderBillForm(editId, params = {}) {
   delete f.rateDate;
   f.photos = editId && src ? [...(src.photos || [])] : [];
   f.newPhotos = [];
+  // 草稿：新记一笔时自动恢复上次没保存的内容（3 天内）
+  const useDraft = !editId && !params.copy;
+  const draft = useDraft ? readLS(DRAFT_KEY(), null) : null;
+  const restored = !!(draft && Date.now() - draft.at < 3 * 86400e3 && draft.f);
+  if (restored) Object.assign(f, clone(draft.f));
+  let membersTouched = restored;
   const shownIds = [...new Set([...active, ...f.split.members, f.payer].filter(Boolean))];
   const titles = [...new Set(d.bills.filter((b) => b.kind !== 'carry').sort((a, b) => (a.date < b.date ? 1 : -1)).map((b) => b.title).filter(Boolean))].slice(0, 40);
   const methods = [...new Set([...d.methods, f.method].filter(Boolean))];
@@ -760,13 +768,14 @@ function renderBillForm(editId, params = {}) {
   $view.innerHTML = `
     <div class="page-h"><h1>${t(editId ? '编辑账目' : '记一笔')}</h1>${editId ? '' : formTabs('bill')}</div>
     ${readonlyNote()}
+    ${restored ? `<div class="notice">${t('已恢复上次没保存的内容。')} <button type="button" class="btn-mini" id="clearDraft">${t('清空，重新开始')}</button></div>` : ''}
     <form id="bf" class="form" autocomplete="off" novalidate>
       ${f.kind === 'carry' ? `<div class="notice">${t('这是一条<b>期初结转</b>记录（从 Excel 总账导入的欠款余额），付款人 = 收款人，分摊人 = 欠款人。')}</div>` : ''}
       <div class="grid2">
         <label class="field"><span class="lbl">${t('日期')}</span><input type="date" name="date" value="${f.date}" required></label>
         <div class="field"><span class="lbl">${t('类型')}</span>${chips('meal', MEALS.map((m) => [m, tm(m)]), f.meal, { toggle: true })}</div>
       </div>
-      <label class="field"><span class="lbl">${t('地点 / 内容')}</span><input name="title" value="${esc(f.title)}" placeholder="${t('比如：一风堂 本乡三丁目')}" list="titles" enterkeyhint="next"></label>
+      <label class="field"><span class="lbl">${t('地点 / 内容')}</span><input name="title" value="${esc(f.title)}" placeholder="${t('比如：一风堂 本乡三丁目')}" list="titles" enterkeyhint="next"><span class="hint" id="placeHint"></span></label>
       <datalist id="titles">${titles.map((x) => `<option value="${esc(x)}">`).join('')}</datalist>
       <div class="field"><span class="lbl">${t('金额')}</span>
         <div class="amount-row">${curSeg(f.currency)}
@@ -883,7 +892,7 @@ function renderBillForm(editId, params = {}) {
         form.querySelectorAll('[name=meal]').forEach((x) => { x.checked = x.value === meal; x.dataset.was = x.checked ? '1' : ''; });
         got.push(`${t(meal)}（${r.time}）`);
       }
-      if (r.title) { $('[name=title]').value = r.title; got.push(r.title); } else miss.push(t('地点'));
+      if (r.title) { $('[name=title]').value = r.title; got.push(r.title); setTimeout(() => applyPlace(r.title), 0); } else miss.push(t('地点'));
       if (r.amount) {
         $(`[name=currency][value=${r.currency}]`).checked = true;
         $('[name=amount]').value = String(r.amount);
@@ -941,12 +950,43 @@ function renderBillForm(editId, params = {}) {
       if (v > 0) { f.rate = v; f.rateSource = 'manual'; updateRateText(form, f); updateShares(); }
       return;
     }
+    if (e.target.name === 'members' || e.target.dataset?.f === 'all' || e.target.dataset?.f === 'none') membersTouched = true;
     const before = snap;
     const prevDate = f.date;
     readForm();
     snap = snapshot();
     if (before !== snap) renderSplitRows(); else updateShares();
     if (prevDate !== f.date && !rateEditing) renderRate();
+    if (e.type === 'change' && e.target.name === 'title' && !editId) applyPlace(f.title);
+    saveDraft();
+  }
+  let draftTimer = null;
+  function saveDraft() {
+    if (!useDraft) return;
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => {
+      if (!(f.title || String(f.amount).trim() || f.note)) return;
+      const keep = ['date', 'meal', 'title', 'currency', 'amount', 'payer', 'method', 'split', 'note', 'rate', 'rateSource'];
+      writeLS(DRAFT_KEY(), { at: Date.now(), f: clone(Object.fromEntries(keep.map((k) => [k, f[k]]))) });
+    }, 400);
+  }
+  /** 选了去过的店：按最近一次在这家店的账，带出参与人、币种、支付方式 */
+  function applyPlace(title) {
+    const key = normTitle(title);
+    const hint = $('#placeHint');
+    hint.textContent = '';
+    if (!key) return;
+    const last = D().bills.filter((b) => b.kind !== 'carry' && normTitle(b.title) === key).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+    if (!last) return;
+    const ids = last.split.members.filter((id) => shownIds.includes(id));
+    if (!membersTouched && ids.length) form.querySelectorAll('input[name=members]').forEach((x) => (x.checked = ids.includes(x.value)));
+    const cur = form.querySelector(`[name=currency][value=${last.currency}]`);
+    if (cur && !String(f.amount).trim()) cur.checked = true;
+    if (last.method && !f.method) form.querySelectorAll('[name=method]').forEach((x) => { x.checked = x.value === last.method; x.dataset.was = x.checked ? '1' : ''; });
+    readForm();
+    snap = snapshot();
+    renderSplitRows();
+    hint.textContent = t('已按上次（{date}）在这家店的设置选好了参与人和币种', { date: fmtDate(last.date) });
   }
   form.addEventListener('input', onInput);
   form.addEventListener('change', onInput);
@@ -968,6 +1008,7 @@ function renderBillForm(editId, params = {}) {
     if (act === 'rmPhoto') { (b.dataset.k === 'old' ? f.photos : f.newPhotos).splice(+b.dataset.i, 1); if (!f.newPhotos.length) f.ocrSrc = null; renderPhotos(); }
     if (act === 'ocr') runOcr();
   });
+  document.getElementById('clearDraft')?.addEventListener('click', () => { localStorage.removeItem(DRAFT_KEY()); render(); });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -976,6 +1017,14 @@ function renderBillForm(editId, params = {}) {
     const err = C.billError(bill, (id) => mem(id).name);
     if (err) return toast(err, 'err');
     if (!S.canWrite()) return toast(t('只读模式，请先在设置里填写 GitHub Token'), 'err');
+    if (!editId) {
+      const dup = D().bills.filter((b) => b.kind !== 'carry' && b.date === bill.date && b.currency === bill.currency
+        && (Math.abs(b.amount - bill.amount) <= Math.max(1, bill.amount * 0.02) || (normTitle(bill.title) && normTitle(b.title) === normTitle(bill.title))));
+      if (dup.length) {
+        const list = dup.map((b) => `· ${b.title || t('未命名')}  ${moneyText(b.amount, b.currency)}  ${t('{payer} 付', { payer: mem(b.payer).name })}${b.createdBy ? '  ' + t('由 {name} 记录 · ', { name: mem(b.createdBy).name }).replace(/ · $/, '') : ''}`).join('\n');
+        if (!confirm(t('这笔可能已经有人记过了：') + '\n' + list + '\n\n' + t('仍然要保存吗？'))) return;
+      }
+    }
     const now = nowISO();
     bill.id = editId || uid('b');
     bill.updatedAt = now;
@@ -998,7 +1047,7 @@ function renderBillForm(editId, params = {}) {
     const ok = await save({ t: 'putBill', v: bill }, `${editId ? '修改' : '记账'} ${bill.date} ${bill.title || ''} ${bill.amount}${bill.currency}`);
     btn.disabled = false;
     btn.textContent = label;
-    if (ok) location.hash = '#/bills';
+    if (ok) { if (useDraft) localStorage.removeItem(DRAFT_KEY()); location.hash = '#/bills'; }
   });
 
   readForm();
