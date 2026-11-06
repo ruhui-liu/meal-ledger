@@ -1012,9 +1012,11 @@ function renderSettings() {
 
     <section class="card"><h3>${t('我是谁')} <small class="muted">${t('（只保存在这台设备）')}</small></h3>
       <div class="chips pad">${d.members.filter((m) => !m.inactive).map((m) => `<button class="chip-btn ${m.id === me ? 'on' : ''}" data-act="setMe" data-arg="${m.id}">${av(m.id, 'xs')}${nm(m.id)}</button>`).join('') || `<span class="muted">${t('先添加成员')}</span>`}</div>
+      ${me && w ? `<div class="pad"><button class="btn sm" data-act="editMember" data-arg="${me}">${av(me, 'xs')} ${t('换我的头像 / 改名字')}</button></div>` : ''}
     </section>
 
     <section class="card"><div class="card-h"><b>${t('成员')}</b>${w ? `<button class="btn-mini card-h-r" data-act="addMember">${t('＋ 添加')}</button>` : ''}</div>
+      ${w ? `<p class="muted small pad" style="padding-bottom:4px">${t('点一位成员，可以改名字、换头像、隐藏。')}</p>` : `<p class="muted small pad" style="padding-bottom:4px">${t('只读模式下不能修改成员和头像，需要先在下面「GitHub 同步」填写 Token。')}</p>`}
       ${d.members.map((m) => `<div class="mem-row" ${w ? `data-act="editMember" data-arg="${m.id}" role="button" tabindex="0"` : ''}>${av(m.id)}<span class="nm">${nm(m.id)}${m.inactive ? ` <small class="tag">${t('已隐藏')}</small>` : ''}</span><small class="muted">${esc(m.short)}</small>${w ? '<span class="chev">›</span>' : ''}</div>`).join('') || `<p class="muted pad">${t('还没有成员')}</p>`}
     </section>
 
