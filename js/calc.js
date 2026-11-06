@@ -46,6 +46,21 @@ export function sharesOf(bill) {
     ids.forEach((id) => (sum += val(id)));
     const rem = (amt - sum) / n;
     ids.forEach((id) => (out[id] = val(id) + rem));
+  } else if (sp.mode === 'items') {
+    // 按菜分：每道菜由吃的人平分；菜价合计与总额的差（税、服务费、优惠）按各人点菜金额比例分摊
+    const sub = {};
+    ids.forEach((id) => (sub[id] = 0));
+    let sum = 0;
+    for (const it of sp.items || []) {
+      const price = +it.price;
+      if (!(price > 0)) continue;
+      const who = (it.members || []).filter((id) => ids.includes(id));
+      const w = who.length ? who : ids;
+      w.forEach((id) => (sub[id] += price / w.length));
+      sum += price;
+    }
+    const rem = amt - sum;
+    ids.forEach((id) => (out[id] = sum > 0 ? sub[id] + (rem * sub[id]) / sum : amt / n));
   } else if (sp.mode === 'ratio') {
     let w = 0;
     ids.forEach((id) => (w += Math.max(0, val(id))));
@@ -62,7 +77,11 @@ export function billError(bill, nameOf = (id) => id) {
   if (!bill.payer) return t('请选择付款人');
   const sp = bill.split;
   if (!sp.members.length) return t('请至少选一位参与人');
-  if (sp.mode !== 'equal') {
+  if (sp.mode === 'items') {
+    const items = sp.items || [];
+    if (items.some((it) => !Number.isFinite(it.price))) return t('菜的价格格式不对');
+    if (!items.some((it) => it.price > 0)) return t('请至少填一道菜和价格');
+  } else if (sp.mode !== 'equal') {
     for (const id of sp.members) {
       if (!Number.isFinite(sp.values?.[id])) return t('{name} 的数字格式不对', { name: nameOf(id) });
     }

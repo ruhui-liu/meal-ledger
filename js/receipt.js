@@ -125,7 +125,26 @@ function findStore(lines) {
   return scored.length ? scored[0][0] : null;
 }
 
-/** 从识别出的文字里提取 { date, time, title, amount, currency } */
+/** 菜品明细：日期行之后、小計/合計之前，「名字 … 价格」这样的行 */
+function findItems(lines) {
+  const start = lines.findIndex((l) => /(20\d{2}|令和|R\d)[年/.\-]?\d|\d{1,2}[:：]\d{2}/.test(l));
+  const stopRe = /小\s*計|合\s*計|総\s*計|お会計|TOTAL|Total|合计|总计|税/;
+  const skip = /TEL|Tel|電話|〒|領収|レシート|登録番号|担当|レジ|No\.|伝票|お預|お釣|預り|釣銭|ポイント|割引|値引|クーポン|カード|現金|PayPay|点数/;
+  const out = [];
+  for (let i = start + 1; i < lines.length; i++) {
+    const l = lines[i];
+    if (stopRe.test(l)) break;
+    if (skip.test(l)) continue;
+    const m = l.match(/^(.*?[^\d\s¥\\,.].*?)\s+[¥\\]?\s*(\d{1,3}(?:,\d{3})+|\d{2,6})\s*(?:円)?$/);
+    if (!m) continue;
+    const price = parseFloat(m[2].replace(/,/g, ''));
+    const name = m[1].replace(/\s+/g, ' ').replace(/[¥\\]\s*$/, '').trim();
+    if (price >= 10 && name.length >= 1 && name.length <= 30) out.push({ name, price });
+  }
+  return out.length >= 2 ? out.slice(0, 30) : [];
+}
+
+/** 从识别出的文字里提取 { date, time, title, amount, currency, items } */
 export function parseReceipt(text, today) {
   const lines = Z2H(text).split(/\n/).map((l) => l.trim()).filter(Boolean);
   const all = lines.join('\n');
@@ -134,5 +153,5 @@ export function parseReceipt(text, today) {
   const currency = cnHint && !jpHint ? 'CNY' : 'JPY';
   let amount = findTotal(lines);
   if (amount && currency === 'JPY') amount = Math.round(amount);
-  return { date: findDate(lines, today), time: findTime(lines), title: findStore(lines), amount, currency };
+  return { date: findDate(lines, today), time: findTime(lines), title: findStore(lines), amount, currency, items: findItems(lines) };
 }

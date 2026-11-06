@@ -644,7 +644,10 @@ function openBill(id) {
   const sh = C.sharesOf(b);
   const rate = C.rateOf(b, D());
   const other = b.currency === 'JPY' ? 'CNY' : 'JPY';
-  const modeTxt = t({ equal: '平均分', amount: '指定金额', ratio: '按比例' }[b.split.mode] || '平均分');
+  const modeTxt = t({ equal: '平均分', amount: '指定金额', ratio: '按比例', items: '按菜分' }[b.split.mode] || '平均分');
+  const itemsHtml = b.split.mode === 'items' && b.split.items?.length ? `<h3>${t('菜品')}</h3><div class="shares">${b.split.items.map((it) => `<div class="share-row">
+      <span class="nm"><span>${esc(it.name || t('未命名'))}</span><span class="avs">${(it.members?.length ? it.members : b.split.members).map((id) => av(id, 'xs')).join('')}</span></span>
+      <span class="share-v">${money(it.price, b.currency)}</span></div>`).join('')}</div>` : '';
   const rows = b.split.members.map((mid) => {
     const v = sh[mid];
     const raw = b.split.mode !== 'equal' ? `<small class="muted">${t(b.split.mode === 'ratio' ? '比例 ' : '指定 ')}${esc(String(b.split.values?.[mid] ?? 0))}</small>` : '';
@@ -667,6 +670,7 @@ function openBill(id) {
     </dl>
     <h3>${t('{n} 人分摊', { n: b.split.members.length })}${payerIn ? '' : t('（付款人没有参与）')}</h3>
     <div class="shares">${rows}</div>
+    ${itemsHtml}
     ${b.photos?.length ? `<h3>${t('小票照片')}</h3><div class="photo-grid">${b.photos.map((r) => `<button class="photo" data-act="viewImg" data-src="${esc(S.mediaUrl(r))}" data-title="${esc(b.title || '')}"><img src="${esc(S.mediaUrl(r))}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
     ${b.note ? `<p class="note">${esc(b.note)}</p>` : ''}
     <p class="muted small">${creator ? t('由 {name} 记录 · ', { name: esc(creator) }) : ''}${b.createdAt ? new Date(b.createdAt).toLocaleString() : ''}</p>
@@ -745,13 +749,14 @@ function renderBillForm(editId, params = {}) {
   const active = d.members.filter((m) => !m.inactive).map((m) => m.id);
   const lastMembers = (prefs.lastMembers || active).filter((id) => active.includes(id));
   const f = src
-    ? { ...clone(src), split: { mode: src.split.mode || 'equal', members: [...src.split.members], values: Object.fromEntries(Object.entries(src.split.values || {}).map(([k, v]) => [k, String(v)])) }, amount: String(src.amount) }
+    ? { ...clone(src), split: { mode: src.split.mode || 'equal', members: [...src.split.members], values: Object.fromEntries(Object.entries(src.split.values || {}).map(([k, v]) => [k, String(v)])), items: (src.split.items || []).map((it) => ({ name: it.name || '', price: String(it.price ?? ''), members: [...(it.members || [])] })) }, amount: String(src.amount) }
     : { kind: 'meal', date: today(), meal: guessMeal(), title: '', currency: prefs.lastCur || 'JPY', amount: '', payer: me || '', method: '', split: { mode: 'equal', members: lastMembers.length ? lastMembers : active, values: {} }, note: '' };
   if (!editId && src) { // 复制为新账
     Object.assign(f, { id: undefined, date: today(), kind: 'meal', createdAt: undefined, createdBy: undefined });
   }
   if (!isManual(f)) Object.assign(f, { rate: null, rateSource: null });
   delete f.rateDate;
+  f.split.items = f.split.items || [];
   f.photos = editId && src ? [...(src.photos || [])] : [];
   f.newPhotos = [];
   // 草稿：新记一笔时自动恢复上次没保存的内容（3 天内）
@@ -759,6 +764,7 @@ function renderBillForm(editId, params = {}) {
   const draft = useDraft ? readLS(DRAFT_KEY(), null) : null;
   const restored = !!(draft && Date.now() - draft.at < 3 * 86400e3 && draft.f);
   if (restored) Object.assign(f, clone(draft.f));
+  f.split.items = f.split.items || [];
   let membersTouched = restored;
   const shownIds = [...new Set([...active, ...f.split.members, f.payer].filter(Boolean))];
   const titles = [...new Set(d.bills.filter((b) => b.kind !== 'carry').sort((a, b) => (a.date < b.date ? 1 : -1)).map((b) => b.title).filter(Boolean))].slice(0, 40);
@@ -788,8 +794,9 @@ function renderBillForm(editId, params = {}) {
         <span><button type="button" class="link" data-f="all">${t('全选')}</button><button type="button" class="link" data-f="none">${t('清空')}</button></span></div>
         <div id="membersBox">${withAdd(chips('members', memberOpts(shownIds), f.split.members, { type: 'checkbox' }), 'members')}</div></div>
       <div class="field"><span class="lbl">${t('怎么分')}</span>
-        ${seg('splitMode', [['equal', t('平均分')], ['amount', t('指定金额')], ['ratio', t('按比例')]], f.split.mode)}
+        ${seg('splitMode', [['equal', t('平均分')], ['amount', t('指定金额')], ['ratio', t('按比例')], ['items', t('按菜分')]], f.split.mode)}
         <div class="hint" id="splitHint"></div>
+        <div id="itemsBox" class="items-box"></div>
         <div id="splitRows" class="split-rows"></div>
       </div>
       <div class="field"><span class="lbl">${t('汇率（按消费日的银联汇率，用于换算）')}</span><div class="rate-box" id="rateBox"></div></div>
@@ -819,11 +826,14 @@ function renderBillForm(editId, params = {}) {
   }
   function buildBill() {
     const values = {};
-    if (f.split.mode !== 'equal') for (const id of f.split.members) { const s = f.split.values[id]; values[id] = s === undefined || String(s).trim() === '' ? 0 : parseNum(s); }
+    if (f.split.mode === 'amount' || f.split.mode === 'ratio') for (const id of f.split.members) { const s = f.split.values[id]; values[id] = s === undefined || String(s).trim() === '' ? 0 : parseNum(s); }
+    const items = f.split.items
+      .filter((it) => it.name.trim() || String(it.price).trim())
+      .map((it) => ({ name: it.name.trim(), price: String(it.price).trim() === '' ? NaN : parseNum(it.price), members: it.members.filter((id) => f.split.members.includes(id)) }));
     return {
       id: f.id, kind: f.kind || 'meal', date: f.date, meal: f.meal, title: f.title, currency: f.currency, amount: parseNum(f.amount),
       payer: f.payer, method: f.method,
-      split: { mode: f.split.mode, members: [...f.split.members], ...(f.split.mode !== 'equal' ? { values } : {}) },
+      split: { mode: f.split.mode, members: [...f.split.members], ...(f.split.mode === 'amount' || f.split.mode === 'ratio' ? { values } : {}), ...(f.split.mode === 'items' ? { items } : {}) },
       ...rateFields(f), note: f.note,
       createdAt: f.createdAt, createdBy: f.createdBy,
     };
@@ -831,10 +841,21 @@ function renderBillForm(editId, params = {}) {
   function renderSplitRows() {
     const mode = f.split.mode;
     $('#pc').textContent = f.split.members.length ? t('（{n} 人）', { n: f.split.members.length }) : '';
+    const withInput = mode === 'amount' || mode === 'ratio';
+    $('#itemsBox').innerHTML = mode === 'items' ? itemsEditor() : '';
     $('#splitRows').innerHTML = f.split.members.map((id) => `<div class="split-row">${av(id)}<span class="nm">${nm(id)}</span>
-      ${mode === 'equal' ? '' : `<input data-sv="${id}" inputmode="decimal" value="${esc(f.split.values[id] ?? '')}" placeholder="0" aria-label="${nm(id)}">`}
+      ${withInput ? `<input data-sv="${id}" inputmode="decimal" value="${esc(f.split.values[id] ?? '')}" placeholder="0" aria-label="${nm(id)}">` : ''}
       <span class="share" data-share="${id}"></span></div>`).join('');
     updateShares();
+  }
+  function itemsEditor() {
+    const ids = f.split.members;
+    return f.split.items.map((it, i) => `<div class="item-ed">
+        <div class="item-ed-top"><input data-it="name" data-i="${i}" value="${esc(it.name)}" placeholder="${t('菜名')}">
+          <input data-it="price" data-i="${i}" inputmode="decimal" value="${esc(it.price)}" placeholder="${t('价格')}">
+          <button type="button" class="icon-btn" data-f="rmItem" data-i="${i}" aria-label="${t('删除')}">×</button></div>
+        <div class="item-ed-who">${ids.map((id) => `<button type="button" class="chip-btn ${it.members.includes(id) ? 'on' : ''}" data-f="itemMem" data-i="${i}" data-id="${id}">${av(id, 'xs')}${nmShort(id)}</button>`).join('')}</div>
+      </div>`).join('') + `<button type="button" class="btn sm" data-f="addItem">${t('＋ 添加一道菜')}</button>`;
   }
   function updateShares() {
     const bill = buildBill();
@@ -862,6 +883,14 @@ function renderBillForm(editId, params = {}) {
         ? `<span class="err">${t('已指定 {sum}，超出总额 {over}', { sum: moneyText(sum, cur), over: moneyText(-rem, cur) })}</span>`
         : isZero(rem, cur) ? t('已指定 {sum}，正好等于总额', { sum: moneyText(sum, cur) })
         : t('已指定 {sum}，剩下 {rem} 由 {n} 人平均分（每人 +{each}）', { sum: moneyText(sum, cur), rem: moneyText(rem, cur), n, each: moneyText(rem / n, cur) });
+    } else if (f.split.mode === 'items') {
+      const items = bill.split.items || [];
+      const sum = items.reduce((a, it) => a + (Number.isFinite(it.price) ? it.price : 0), 0);
+      const rem = (bill.amount || 0) - sum;
+      hint.innerHTML = !items.length ? t('一道菜一行：填价格，点选谁吃了（不选就是大家一起分）。可以先识别小票自动列出菜单。')
+        : !okAmt ? t('菜价合计 {sum}', { sum: moneyText(sum, cur) })
+        : isZero(rem, cur) ? t('菜价合计 {sum}，正好等于总额', { sum: moneyText(sum, cur) })
+        : t('菜价合计 {sum}，和总额差 {rem}（税、服务费或优惠），按各人点菜金额比例分摊', { sum: moneyText(sum, cur), rem: moneyText(rem, cur) });
     } else hint.innerHTML = t('填每个人的比例或各自点单的价格，总额按比例分摊（适合用人民币刷卡、按日元菜价分的情况）');
   }
   function renderRate() { $('#rateBox').innerHTML = rateBoxHtml(f, rateEditing); }
@@ -871,6 +900,7 @@ function renderBillForm(editId, params = {}) {
     $('#ocrBox').innerHTML = !has ? '' : `<div class="ocr-row">
         <button type="button" class="btn sm" data-f="ocr" ${ocrState.busy ? 'disabled' : ''}>✨ ${t(ocrState.busy ? '识别中…' : '识别小票，自动填写')}</button>
         <span class="hint">${ocrState.msg}</span></div>
+      ${ocrState.items?.length ? `<button type="button" class="btn sm" data-f="useItems">🍽 ${t('按菜分（识别到 {n} 道菜）', { n: ocrState.items.length })}</button>` : ''}
       ${ocrState.text ? `<details class="ocr-raw"><summary>${t('识别到的文字')}</summary><pre>${esc(ocrState.text)}</pre></details>` : ''}`;
   }
   async function runOcr() {
@@ -900,7 +930,7 @@ function renderBillForm(editId, params = {}) {
       } else miss.push(t('金额'));
       onInput({ target: form });
       if (r.date && !rateEditing) renderRate();
-      ocrState = { busy: false, text, msg: got.length
+      ocrState = { busy: false, text, items: r.items, msg: got.length
         ? `<span class="pos">${esc(t('已填入：{v}', { v: got.join(' · ') }))}</span>${miss.length ? ' ' + esc(t('（没识别到：{v}）', { v: miss.join('、') })) : ''} ${esc(t('请核对一下'))}`
         : `<span class="err">${esc(t('没能识别出信息，可以换一张更清楚、更正的照片再试'))}</span>` };
     } catch (err) {
@@ -950,6 +980,7 @@ function renderBillForm(editId, params = {}) {
       if (v > 0) { f.rate = v; f.rateSource = 'manual'; updateRateText(form, f); updateShares(); }
       return;
     }
+    if (e.target.dataset?.it) { f.split.items[+e.target.dataset.i][e.target.dataset.it] = e.target.value; updateShares(); saveDraft(); return; }
     if (e.target.name === 'members' || e.target.dataset?.f === 'all' || e.target.dataset?.f === 'none') membersTouched = true;
     const before = snap;
     const prevDate = f.date;
@@ -1007,6 +1038,19 @@ function renderBillForm(editId, params = {}) {
     if (act === 'addMember') addMemberHere(b.dataset.where);
     if (act === 'rmPhoto') { (b.dataset.k === 'old' ? f.photos : f.newPhotos).splice(+b.dataset.i, 1); if (!f.newPhotos.length) f.ocrSrc = null; renderPhotos(); }
     if (act === 'ocr') runOcr();
+    if (act === 'addItem') { f.split.items.push({ name: '', price: '', members: [...f.split.members] }); renderSplitRows(); form.querySelector(`[data-it=name][data-i="${f.split.items.length - 1}"]`)?.focus(); saveDraft(); }
+    if (act === 'rmItem') { f.split.items.splice(+b.dataset.i, 1); renderSplitRows(); saveDraft(); }
+    if (act === 'itemMem') {
+      const it = f.split.items[+b.dataset.i], id = b.dataset.id;
+      it.members = it.members.includes(id) ? it.members.filter((x) => x !== id) : [...it.members, id];
+      b.classList.toggle('on'); updateShares(); saveDraft();
+    }
+    if (act === 'useItems' && ocrState.items?.length) {
+      f.split.items = ocrState.items.map((it) => ({ name: it.name, price: String(it.price), members: [...f.split.members] }));
+      form.querySelector('[name=splitMode][value=items]').checked = true;
+      readForm(); snap = snapshot(); renderSplitRows(); saveDraft();
+      $('#itemsBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   });
   document.getElementById('clearDraft')?.addEventListener('click', () => { localStorage.removeItem(DRAFT_KEY()); render(); });
 
@@ -1535,7 +1579,7 @@ function toCSV() {
   for (const b of sorted) {
     const sh = C.sharesOf(b);
     lines.push([t(b.kind === 'carry' ? '期初结转' : '消费'), b.date, t(b.meal || ''), b.title || '', b.currency, b.amount, mem(b.payer).name, t(b.method || ''),
-      t({ equal: '平均', amount: '指定金额', ratio: '按比例' }[b.split.mode] || '平均'),
+      t({ equal: '平均', amount: '指定金额', ratio: '按比例', items: '按菜分' }[b.split.mode] || '平均'),
       ...ms.map((m) => (sh[m.id] !== undefined ? roundCur(sh[m.id], b.currency) : '')), C.rateOf(b, d), b.note || ''].map(q).join(','));
   }
   for (const p of [...d.payments].sort((a, b) => (a.date < b.date ? -1 : 1))) {
