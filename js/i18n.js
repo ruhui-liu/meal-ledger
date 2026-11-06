@@ -368,6 +368,7 @@ const EN = {
   "有小票": "receipt",
   "小票照片": "Receipts",
   "拍照": "Camera",
+  "拍小票可以自动填写日期、店名、金额（可选，最多 4 张）": "Snap the receipt to fill in date, place and amount automatically (optional, up to 4)",
   "日常聚餐": "Everyday meals",
   "还有没同步的修改，等同步完再切换账本": "There are unsynced changes; switch ledgers after they sync",
   "账本": "Ledgers",

@@ -839,6 +839,8 @@ function renderBillForm(editId, params = {}) {
     ${restored ? `<div class="notice">${t('已恢复上次没保存的内容。')} <button type="button" class="btn-mini" id="clearDraft">${t('清空，重新开始')}</button></div>` : ''}
     <form id="bf" class="form" autocomplete="off" novalidate>
       ${f.kind === 'carry' ? `<div class="notice">${t('这是一条<b>期初结转</b>记录（从 Excel 总账导入的欠款余额），付款人 = 收款人，分摊人 = 欠款人。')}</div>` : ''}
+      <div class="field receipt-top"><span class="lbl">${t('小票照片')} <small class="muted">${t('拍小票可以自动填写日期、店名、金额（可选，最多 4 张）')}</small></span><div class="photo-grid edit" id="photos"></div>
+        <div class="ocr-box" id="ocrBox"></div></div>
       <div class="grid2">
         <label class="field"><span class="lbl">${t('日期')}</span><input type="date" name="date" value="${f.date}" required></label>
         <div class="field"><span class="lbl">${t('类型')}</span>${chips('meal', MEALS.map((m) => [m, tm(m)]), f.meal, { toggle: true })}</div>
@@ -862,8 +864,6 @@ function renderBillForm(editId, params = {}) {
         <div id="splitRows" class="split-rows"></div>
       </div>
       <div class="field"><span class="lbl">${t('汇率（按消费日的银联汇率，用于换算）')}</span><div class="rate-box" id="rateBox"></div></div>
-      <div class="field"><span class="lbl">${t('小票照片')} <small class="muted">${t('（可选，最多 4 张）')}</small></span><div class="photo-grid edit" id="photos"></div>
-        <div class="ocr-box" id="ocrBox"></div></div>
       <label class="field"><span class="lbl">${t('备注')}</span><textarea name="note" rows="2" placeholder="${t('可选')}">${esc(f.note || '')}</textarea></label>
       <div class="form-actions"><button type="submit" class="btn primary block" ${S.canWrite() ? '' : 'disabled'}>${t(editId ? '保存修改' : '保存')}</button>
         ${editId ? `<a class="btn block" href="#/bills">${t('取消')}</a>` : ''}</div>
