@@ -5,7 +5,12 @@
 import { b64encode, b64decode, readLS, writeLS, clone, nowISO } from './util.js';
 import { t } from './i18n.js';
 
-const LS = { cfg: 'fz.config', cache: 'fz.cache', pending: 'fz.pending', local: 'fz.local', rates: 'fz.unionpay' };
+const LS = { cfg: 'fz.config', cache: 'fz.cache', pending: 'fz.pending', local: 'fz.local', rates: 'fz.unionpay', ledger: 'fz.ledger', ledgers: 'fz.ledgers', localLedgers: 'fz.local.ledgers' };
+// 多个账本：主账本 data/ledger.json，其他账本 data/ledgers/<id>.json，列表在 data/ledgers.json
+const curLedger = () => readLS(LS.ledger, '') || '';
+/** 每个账本各自的本机缓存 / 待同步队列 */
+const k = (name) => (curLedger() ? `${LS[name]}:${curLedger()}` : LS[name]);
+const dir = (p) => p.replace(/[^/]*$/, '');
 export const DEFAULT_METHODS = ['现金', '刷卡', '支付宝', '微信支付', 'PayPay', '其他'];
 
 export const emptyData = () => ({ version: 1, members: [], methods: [...DEFAULT_METHODS], bills: [], payments: [] });
@@ -24,7 +29,7 @@ function normalize(d) {
 
 let base = null; // 最近一次从仓库/本地读到的数据（不含未同步的修改）
 let sha = null;
-let pending = readLS(LS.pending, []) || [];
+let pending = readLS(k('pending'), []) || [];
 
 export const state = {
   data: emptyData(),
@@ -35,6 +40,8 @@ export const state = {
   loaded: false,
   pending: pending.length,
   rates: readLS(LS.rates, {}) || {}, // 银联汇率表 { 'YYYY-MM-DD': 1円兑多少元 }
+  ledgers: readLS(LS.ledgers, []) || [], // [{ id, name, hidden }]，id '' 是主账本
+  ledger: curLedger(),
 };
 
 const subs = new Set();
@@ -53,11 +60,14 @@ function detectRepo() {
 export function getConfig() {
   const saved = readLS(LS.cfg, {}) || {};
   const det = detectRepo();
+  const basePath = saved.path || 'data/ledger.json';
+  const ledger = curLedger();
   return {
     owner: saved.owner || det.owner || '',
     repo: saved.repo || det.repo || '',
     branch: saved.branch || 'main',
-    path: saved.path || 'data/ledger.json',
+    basePath, ledger,
+    path: ledger ? `${dir(basePath)}ledgers/${ledger}.json` : basePath,
     token: saved.token || '',
     me: saved.me || '',
   };
@@ -101,7 +111,7 @@ function recompute() {
   state.pending = pending.length;
 }
 function savePending() {
-  writeLS(LS.pending, pending);
+  writeLS(k('pending'), pending);
   state.pending = pending.length;
 }
 
@@ -168,7 +178,13 @@ export async function testConnection(c = getConfig()) {
 }
 
 // 汇率表和账本放在同一个目录：data/rates.json
-const ratesPath = (c) => c.path.replace(/[^/]*$/, '') + 'rates.json';
+const ratesPath = (c) => dir(c.basePath) + 'rates.json';
+const indexPath = (c) => dir(c.basePath) + 'ledgers.json';
+function setLedgers(list) {
+  if (!Array.isArray(list)) return;
+  state.ledgers = list;
+  writeLS(LS.ledgers, list);
+}
 function setRates(doc) {
   const r = doc && doc.rates;
   if (r && typeof r === 'object' && Object.keys(r).length) {
@@ -180,7 +196,7 @@ function setRates(doc) {
 // ---------- 读取 / 保存 ----------
 export async function init() {
   state.mode = computeMode();
-  const cached = readLS(state.mode === 'local' ? LS.local : LS.cache, null);
+  const cached = readLS(state.mode === 'local' ? k('local') : k('cache'), null);
   if (cached) {
     base = normalize(cached);
     recompute();
@@ -198,8 +214,9 @@ export async function refresh() {
       const res = await fetch('./data/rates.json', { cache: 'no-store' });
       if (res.ok) setRates(await res.json());
     } catch { /* 用缓存 */ }
-    let d = readLS(LS.local, null);
-    if (!d) {
+    setLedgers(readLS(LS.localLedgers, []) || []);
+    let d = readLS(k('local'), null);
+    if (!d && !c.ledger) {
       try {
         const res = await fetch('./data/ledger.json', { cache: 'no-store' });
         if (res.ok) d = await res.json();
@@ -210,7 +227,7 @@ export async function refresh() {
     for (const p of pending) base = applyOp(base, p.op);
     pending = [];
     savePending();
-    writeLS(LS.local, base);
+    writeLS(k('local'), base);
     recompute();
     state.loaded = true;
     state.status = 'ok';
@@ -220,11 +237,12 @@ export async function refresh() {
   state.status = 'loading';
   emit();
   try {
-    const [r, rr] = await Promise.all([ghGet(c), ghGet({ ...c, path: ratesPath(c) }).catch(() => null)]);
+    const [r, rr, ri] = await Promise.all([ghGet(c), ghGet({ ...c, path: ratesPath(c) }).catch(() => null), ghGet({ ...c, path: indexPath(c) }).catch(() => null)]);
     if (rr && rr.data) setRates(rr.data);
+    if (ri) setLedgers(ri.data?.ledgers || []);
     base = normalize(r.data || emptyData());
     sha = r.sha;
-    writeLS(LS.cache, base);
+    writeLS(k('cache'), base);
     state.status = 'ok';
     state.error = '';
     state.lastSync = Date.now();
@@ -243,7 +261,7 @@ export async function commit(op, msg) {
   if (state.mode === 'readonly') throw new Error(t('只读模式：请先在「设置」里填写 GitHub Token'));
   if (state.mode === 'local') {
     base = applyOp(clone(base || emptyData()), op);
-    writeLS(LS.local, base);
+    writeLS(k('local'), base);
     recompute();
     emit();
     return true;
@@ -289,7 +307,7 @@ async function doFlush() {
       sha = r.content?.sha || null;
       pending = pending.slice(batch.length);
       savePending();
-      writeLS(LS.cache, base);
+      writeLS(k('cache'), base);
       state.status = 'ok';
       state.error = '';
       state.lastSync = Date.now();
@@ -313,7 +331,7 @@ async function doFlush() {
 }
 
 // ---------- 图片（收款码、小票）：作为单独文件存进仓库，账本里只记路径 ----------
-const dataDir = (c) => c.path.replace(/[^/]*$/, '');
+const dataDir = (c) => dir(c.basePath);
 /** 上传一张图片（data URL），返回账本里保存的引用。本地模式直接返回 data URL */
 export async function putMedia(dataUrl, folder) {
   if (state.mode === 'readonly') throw new Error(t('只读模式：请先在「设置」里填写 GitHub Token'));
@@ -354,6 +372,66 @@ export async function ledgerAt(sha) {
   const r = await ghGet({ ...getConfig(), branch: sha });
   return normalize(r.data || emptyData());
 }
+
+// ---------- 多个账本 ----------
+export const ledgerName = (id = curLedger()) => state.ledgers.find((x) => x.id === id)?.name || (id ? id : t('日常聚餐'));
+/** 切换账本（本机记住） */
+export async function switchLedger(id) {
+  if (pending.length) throw new Error(t('还有没同步的修改，等同步完再切换账本'));
+  writeLS(LS.ledger, id || '');
+  state.ledger = id || '';
+  pending = readLS(k('pending'), []) || [];
+  const cached = readLS(state.mode === 'local' ? k('local') : k('cache'), null);
+  base = cached ? normalize(cached) : null;
+  state.loaded = !!cached;
+  recompute();
+  emit();
+  await refresh();
+}
+/** 修改账本列表（data/ledgers.json），有冲突就重试 */
+async function updateIndex(fn, msg) {
+  if (state.mode === 'readonly') throw new Error(t('只读模式：请先在「设置」里填写 GitHub Token'));
+  if (state.mode === 'local') {
+    const list = fn(readLS(LS.localLedgers, []) || []);
+    writeLS(LS.localLedgers, list);
+    setLedgers(list);
+    emit();
+    return;
+  }
+  const c = { ...getConfig() };
+  c.path = indexPath(c);
+  for (let i = 0; i < 4; i++) {
+    const r = await ghGet(c);
+    const list = fn(r.data?.ledgers || []);
+    try {
+      await ghPut(c, { ledgers: list }, r.sha, msg);
+      setLedgers(list);
+      emit();
+      return;
+    } catch (e) {
+      if (e.status !== 409 && e.status !== 422) throw e;
+    }
+  }
+  throw new Error(t('保存冲突，请稍后重试'));
+}
+/** 新建账本，可复制当前账本的成员和支付方式；返回新账本 id */
+export async function createLedger(name, { copyMembers = true } = {}) {
+  const id = Date.now().toString(36);
+  const d = emptyData();
+  if (copyMembers) { d.members = clone(state.data.members); d.methods = clone(state.data.methods); }
+  d.createdAt = nowISO();
+  if (state.mode === 'readonly') throw new Error(t('只读模式：请先在「设置」里填写 GitHub Token'));
+  if (state.mode === 'local') writeLS(`${LS.local}:${id}`, d);
+  else {
+    const c = getConfig();
+    await ghPut({ ...c, path: `${dir(c.basePath)}ledgers/${id}.json` }, d, null, `新建账本 ${name}`);
+  }
+  await updateIndex((list) => [...list.filter((x) => x.id !== id), { id, name, createdAt: nowISO() }], `新建账本 ${name}`);
+  return id;
+}
+export const renameLedger = (id, name) => updateIndex((list) => list.some((x) => x.id === id)
+  ? list.map((x) => (x.id === id ? { ...x, name } : x)) : [...list, { id, name }], `账本改名为 ${name}`);
+export const hideLedger = (id, hidden) => updateIndex((list) => list.map((x) => (x.id === id ? { ...x, hidden } : x)), `${hidden ? '归档' : '恢复'}账本 ${ledgerName(id)}`);
 
 /** 放弃本机还没同步的修改 */
 export function discardPending() {

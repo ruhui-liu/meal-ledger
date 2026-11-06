@@ -200,6 +200,42 @@ document.addEventListener('pointerover', (e) => { const el = e.target.closest?.(
 document.addEventListener('pointerout', (e) => { if (e.target.closest?.('[data-tip]')) tipEl.style.display = 'none'; });
 document.addEventListener('scroll', () => (tipEl.style.display = 'none'), { passive: true });
 
+// ---------------- 多个账本 ----------------
+const multiLedger = () => !!S.state.ledger || S.state.ledgers.some((x) => x.id && !x.hidden);
+const ledgerPill = () => (multiLedger() ? `<button class="ledger-pill" data-act="pickLedger">📒 ${esc(S.ledgerName())} <span class="muted">▾</span></button>` : '');
+function openLedgerPicker() {
+  const cur = S.state.ledger;
+  const list = [{ id: '' }, ...S.state.ledgers.filter((x) => x.id)];
+  const row = (x) => `<button class="ledger-row ${x.id === cur ? 'on' : ''}" data-act="useLedger" data-arg="${esc(x.id)}">
+      <span>📒 ${esc(S.ledgerName(x.id))}</span>${x.id === cur ? `<small class="muted">${t('当前账本')}</small>` : ''}</button>`;
+  const shown = list.filter((x) => !x.hidden), hidden = list.filter((x) => x.hidden);
+  openModal(`<h2 class="sheet-t">${t('账本')}</h2>
+    <div class="list ledger-list">${shown.map(row).join('')}</div>
+    ${hidden.length ? `<details class="pad"><summary class="muted">${t('已归档')}（${hidden.length}）</summary><div class="list ledger-list">${hidden.map(row).join('')}</div></details>` : ''}
+    ${S.canWrite() ? `<h3>${t('新建账本')}</h3>
+      <form id="newLedger" class="form compact">
+        <label class="field"><span class="lbl">${t('账本名称')}</span><input name="name" placeholder="${t('例如：京都旅行')}" required></label>
+        <label class="check"><input type="checkbox" name="copy" checked> ${t('复制当前账本的成员和支付方式')}</label>
+        <div class="btn-row"><button class="btn primary" type="submit">${t('创建')}</button></div>
+      </form>` : ''}`, (sheet) => {
+    const fm = sheet.querySelector('#newLedger');
+    fm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = fm.name.value.trim();
+      if (!name) return toast(t('账本名称不能为空'), 'err');
+      const btn = fm.querySelector('[type=submit]');
+      btn.disabled = true; btn.textContent = t('保存中…');
+      try {
+        const id = await S.createLedger(name, { copyMembers: fm.copy.checked });
+        closeModal();
+        await S.switchLedger(id);
+        toast(t('已创建账本「{name}」', { name }), 'ok');
+        location.hash = '#/';
+      } catch (err) { btn.disabled = false; btn.textContent = t('创建'); toast(err.message, 'err'); }
+    });
+  });
+}
+
 // ---------------- 语言 ----------------
 function applyStaticText() {
   document.title = t('饭账本');
@@ -304,6 +340,30 @@ const ACTIONS = {
   },
   setMe: (id) => { S.saveConfig({ me: id }); toast(t('已设定：我是 {name}', { name: mem(id).name })); render(); },
   setLang: (l) => switchLang(l),
+  pickLedger: () => openLedgerPicker(),
+  useLedger: async (id) => {
+    closeModal();
+    if ((id || '') === S.state.ledger) return;
+    try {
+      const p = S.switchLedger(id || '');
+      location.hash = '#/';
+      await p;
+      toast(t('已切换到「{name}」', { name: S.ledgerName() }), 'ok');
+    } catch (err) { toast(err.message, 'err'); }
+  },
+  renameLedger: async () => {
+    const name = prompt(t('新的账本名称'), S.ledgerName());
+    if (!name || !name.trim()) return;
+    try { await S.renameLedger(S.state.ledger, name.trim()); toast(t('已保存'), 'ok'); render(); } catch (err) { toast(err.message, 'err'); }
+  },
+  archiveLedger: async () => {
+    const id = S.state.ledger;
+    if (!id || !confirm(t('归档「{name}」？归档后不会出现在列表里，数据保留，可以再恢复。', { name: S.ledgerName() }))) return;
+    try { await S.hideLedger(id, true); await S.switchLedger(''); location.hash = '#/'; } catch (err) { toast(err.message, 'err'); }
+  },
+  unarchiveLedger: async () => {
+    try { await S.hideLedger(S.state.ledger, false); toast(t('已保存'), 'ok'); render(); } catch (err) { toast(err.message, 'err'); }
+  },
   viewImg: (arg, el) => viewImage(el.dataset.src, el.dataset.title || ''),
   shareBalances: () => shareSheet(t('结算消息'), balanceMessage()),
   remind: (arg) => {
@@ -502,6 +562,7 @@ function renderBalances() {
 
   $view.innerHTML = `
     <div class="page-h"><h1>${t('谁该给谁多少')}</h1><button class="btn sm" data-act="shareBalances">${t('复制结算消息')}</button></div>
+    ${ledgerPill()}
     ${syncErrorNote()}
     ${whoAmI}
     ${prefs.showNext !== 'off' ? nextPayerCard(d) : ''}
@@ -561,6 +622,7 @@ function renderBills() {
   const d = D();
   $view.innerHTML = `
     <div class="page-h"><h1>${t('账目')}</h1><a class="btn primary sm" href="#/add">${t('＋ 记一笔')}</a></div>
+    ${ledgerPill()}
     ${syncErrorNote()}
     <div class="controls">
       <input class="search" type="search" id="billSearch" placeholder="${t('搜索地点、备注、支付方式…')}" value="${esc(billQuery)}">
@@ -701,7 +763,7 @@ function openPayment(id) {
 }
 
 // ================= 记一笔 =================
-const DRAFT_KEY = () => 'fz.draft';
+const DRAFT_KEY = () => 'fz.draft' + (S.state.ledger ? ':' + S.state.ledger : '');
 const normTitle = (s) => String(s || '').replace(/\s+/g, '').toLowerCase();
 const mealOfHour = (h) => (h < 4 ? '夜宵' : h < 10 ? '早餐' : h < 16 ? '午餐' : h < 22 ? '晚餐' : '夜宵');
 function guessMeal() {
@@ -1295,6 +1357,7 @@ function renderStats() {
   const noRec = `<p class="muted pad">${t('没有记录')}</p>`;
   $view.innerHTML = `
     <div class="page-h"><h1>${t('统计')}</h1></div>
+    ${ledgerPill()}
     <div class="controls">
       ${seg('statsRange', [['all', t('全部')], ['year', t('今年')], ['month', t('本月')], ['lastMonth', t('上月')], ['custom', t('自定义')]], prefs.statsRange, { pref: true, cls: 'sm' })}
       ${prefs.statsRange === 'custom' ? `<div class="controls-row"><input type="date" name="statsFrom" data-pref value="${esc(prefs.statsFrom)}"> ${t('至')} <input type="date" name="statsTo" data-pref value="${esc(prefs.statsTo)}"></div>` : ''}
@@ -1386,6 +1449,14 @@ function renderSettings() {
       <div class="chips pad">${THEMES.map(([id, label]) => `<button class="chip-btn ${document.documentElement.dataset.theme === id ? 'on' : ''}" data-act="setTheme" data-arg="${id}">${t(label)}</button>`).join('')}</div>
     </section>
 
+    <section class="card"><h3>${t('账本')}</h3>
+      <div class="pad setting-row"><span>📒 <b>${esc(S.ledgerName())}</b>${S.state.ledgers.find((x) => x.id === S.state.ledger)?.hidden ? ` <small class="tag">${t('已归档')}</small>` : ''}</span>
+        <span class="btn-row"><button class="btn sm" data-act="pickLedger">${t('切换 / 新建账本')}</button>
+        ${w ? `<button class="btn sm" data-act="renameLedger">${t('改名')}</button>` : ''}
+        ${w && S.state.ledger ? (S.state.ledgers.find((x) => x.id === S.state.ledger)?.hidden ? `<button class="btn sm" data-act="unarchiveLedger">${t('恢复')}</button>` : `<button class="btn sm danger" data-act="archiveLedger">${t('归档')}</button>`) : ''}</span></div>
+      <p class="muted small pad">${t('每个账本的账目、成员、结算互不影响，适合旅行、出差单独记。')}</p>
+    </section>
+
     <section class="card"><h3>${t('功能')}</h3>
       <div class="pad setting-row"><span>${t('结算页显示「下次该谁付」')}</span>${seg('showNext', [['on', t('开')], ['off', t('关')]], prefs.showNext === 'off' ? 'off' : 'on', { pref: true, cls: 'sm' })}</div>
     </section>
@@ -1413,7 +1484,7 @@ function renderSettings() {
           <label class="field"><span class="lbl">${t('GitHub 用户名')}</span><input name="owner" value="${esc(cfg.owner)}" placeholder="ruhui-liu" autocapitalize="off"></label>
           <label class="field"><span class="lbl">${t('仓库名')}</span><input name="repo" value="${esc(cfg.repo)}" placeholder="meal-ledger" autocapitalize="off"></label>
           <label class="field"><span class="lbl">${t('分支')}</span><input name="branch" value="${esc(cfg.branch)}" autocapitalize="off"></label>
-          <label class="field"><span class="lbl">${t('数据文件路径')}</span><input name="path" value="${esc(cfg.path)}" autocapitalize="off"></label>
+          <label class="field"><span class="lbl">${t('数据文件路径')}</span><input name="path" value="${esc(cfg.basePath)}" autocapitalize="off"></label>
         </div>
         <label class="field"><span class="lbl">${t('Token（只保存在这台设备）')}</span><input name="token" type="password" value="" placeholder="${cfg.token ? t('已保存（留空表示不修改）') : 'github_pat_…'}" autocapitalize="off" autocomplete="off"></label>
         <p class="muted small">${t('在 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Settings → Fine-grained tokens</a> 新建：Repository access 只选这个仓库，Permissions → Contents 选 <b>Read and write</b>。')}</p>
