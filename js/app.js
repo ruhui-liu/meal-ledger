@@ -697,9 +697,9 @@ function openPayment(id) {
 }
 
 // ================= 记一笔 =================
+const mealOfHour = (h) => (h < 4 ? '夜宵' : h < 10 ? '早餐' : h < 16 ? '午餐' : h < 22 ? '晚餐' : '夜宵');
 function guessMeal() {
-  const h = new Date().getHours();
-  return h < 10 ? '早餐' : h < 16 ? '午餐' : h < 22 ? '晚餐' : '夜宵';
+  return mealOfHour(new Date().getHours());
 }
 function formTabs(active) {
   return `<div class="seg form-tabs"><a href="#/add" class="${active === 'bill' ? 'on' : ''}">${t('消费')}</a><a href="#/pay" class="${active === 'pay' ? 'on' : ''}">${t('还款 / 转账')}</a></div>`;
@@ -878,6 +878,11 @@ function renderBillForm(editId, params = {}) {
       const r = parseReceipt(text, today());
       const got = [], miss = [];
       if (r.date) { $('[name=date]').value = r.date; got.push(fmtDate(r.date)); } else miss.push(t('日期'));
+      if (r.time) {
+        const meal = mealOfHour(+r.time.slice(0, 2));
+        form.querySelectorAll('[name=meal]').forEach((x) => { x.checked = x.value === meal; x.dataset.was = x.checked ? '1' : ''; });
+        got.push(`${t(meal)}（${r.time}）`);
+      }
       if (r.title) { $('[name=title]').value = r.title; got.push(r.title); } else miss.push(t('地点'));
       if (r.amount) {
         $(`[name=currency][value=${r.currency}]`).checked = true;

@@ -61,6 +61,23 @@ function findDate(lines, today) {
   return null;
 }
 
+/** 消费时间 HH:MM：优先取日期那一行，跳过营业时间（11:00〜23:00）这类 */
+function findTime(lines) {
+  const dateLine = /(20\d{2}|令和|R\d|\d{2}[/.]\d{1,2}[/.]\d{1,2})/;
+  const skip = /営業|OPEN|Open|open|定休|受付|ラストオーダー|L\.?O|\d{1,2}[:：]\d{2}\s*[~〜～\-－ー]\s*\d{1,2}[:：]\d{2}/;
+  const pick = (l) => {
+    if (skip.test(l)) return null;
+    for (const m of l.matchAll(/(?:^|[^\d])(\d{1,2})\s*[:：時]\s*(\d{2})(?:\s*[:：]\s*\d{2})?(?!\d)/g)) {
+      const h = +m[1], mi = +m[2];
+      if (h <= 23 && mi <= 59) return `${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`;
+    }
+    return null;
+  };
+  for (const l of lines) if (dateLine.test(l)) { const r = pick(l); if (r) return r; }
+  for (const l of lines) { if (/TEL|Tel|電話/.test(l)) continue; const r = pick(l); if (r) return r; }
+  return null;
+}
+
 const NUM = /[¥\\]?\s*(\d{1,3}(?:[,.\s]\d{3})+|\d+)(?:\.(\d{1,2}))?\s*(?:円|元)?/g;
 function numbersIn(line) {
   const out = [];
@@ -108,7 +125,7 @@ function findStore(lines) {
   return scored.length ? scored[0][0] : null;
 }
 
-/** 从识别出的文字里提取 { date, title, amount, currency } */
+/** 从识别出的文字里提取 { date, time, title, amount, currency } */
 export function parseReceipt(text, today) {
   const lines = Z2H(text).split(/\n/).map((l) => l.trim()).filter(Boolean);
   const all = lines.join('\n');
@@ -117,5 +134,5 @@ export function parseReceipt(text, today) {
   const currency = cnHint && !jpHint ? 'CNY' : 'JPY';
   let amount = findTotal(lines);
   if (amount && currency === 'JPY') amount = Math.round(amount);
-  return { date: findDate(lines, today), title: findStore(lines), amount, currency };
+  return { date: findDate(lines, today), time: findTime(lines), title: findStore(lines), amount, currency };
 }
