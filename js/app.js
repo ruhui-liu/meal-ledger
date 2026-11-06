@@ -1,6 +1,7 @@
 import * as S from './store.js';
 import * as C from './calc.js';
 import { t, getLang, setLang } from './i18n.js';
+import { ocr, parseReceipt } from './receipt.js';
 import {
   CUR, CURS, esc, uid, today, nowISO, fmtDate, fmtDateShort, weekday, monthKey, fmtMonth,
   roundCur, isZero, num, money, moneyText, unit, parseNum, readLS, writeLS, clone,
@@ -783,7 +784,8 @@ function renderBillForm(editId, params = {}) {
         <div id="splitRows" class="split-rows"></div>
       </div>
       <div class="field"><span class="lbl">${t('汇率（按消费日的银联汇率，用于换算）')}</span><div class="rate-box" id="rateBox"></div></div>
-      <div class="field"><span class="lbl">${t('小票照片')} <small class="muted">${t('（可选，最多 4 张）')}</small></span><div class="photo-grid edit" id="photos"></div></div>
+      <div class="field"><span class="lbl">${t('小票照片')} <small class="muted">${t('（可选，最多 4 张）')}</small></span><div class="photo-grid edit" id="photos"></div>
+        <div class="ocr-box" id="ocrBox"></div></div>
       <label class="field"><span class="lbl">${t('备注')}</span><textarea name="note" rows="2" placeholder="${t('可选')}">${esc(f.note || '')}</textarea></label>
       <div class="form-actions"><button type="submit" class="btn primary block" ${S.canWrite() ? '' : 'disabled'}>${t(editId ? '保存修改' : '保存')}</button>
         ${editId ? `<a class="btn block" href="#/bills">${t('取消')}</a>` : ''}</div>
@@ -854,7 +856,46 @@ function renderBillForm(editId, params = {}) {
     } else hint.innerHTML = t('填每个人的比例或各自点单的价格，总额按比例分摊（适合用人民币刷卡、按日元菜价分的情况）');
   }
   function renderRate() { $('#rateBox').innerHTML = rateBoxHtml(f, rateEditing); }
+  let ocrState = { busy: false, msg: '', text: '' };
+  function renderOcr() {
+    const has = f.photos.length + f.newPhotos.length > 0;
+    $('#ocrBox').innerHTML = !has ? '' : `<div class="ocr-row">
+        <button type="button" class="btn sm" data-f="ocr" ${ocrState.busy ? 'disabled' : ''}>✨ ${t(ocrState.busy ? '识别中…' : '识别小票，自动填写')}</button>
+        <span class="hint">${ocrState.msg}</span></div>
+      ${ocrState.text ? `<details class="ocr-raw"><summary>${t('识别到的文字')}</summary><pre>${esc(ocrState.text)}</pre></details>` : ''}`;
+  }
+  async function runOcr() {
+    const src = f.ocrSrc || (f.newPhotos.length ? f.newPhotos[f.newPhotos.length - 1] : f.photos.length ? S.mediaUrl(f.photos[0]) : '');
+    if (!src || ocrState.busy) return;
+    ocrState = { busy: true, msg: t('第一次使用需要下载识别模型（约 3 MB），请稍等…'), text: '' };
+    renderOcr();
+    try {
+      const text = await ocr(src, (pr, st) => {
+        if (!ocrState.busy) return;
+        ocrState.msg = st === 'recognizing text' ? t('识别中 {p}%', { p: Math.round(pr * 100) }) : t('准备中…');
+        const el = $('#ocrBox .hint'); if (el) el.textContent = ocrState.msg;
+      });
+      const r = parseReceipt(text, today());
+      const got = [], miss = [];
+      if (r.date) { $('[name=date]').value = r.date; got.push(fmtDate(r.date)); } else miss.push(t('日期'));
+      if (r.title) { $('[name=title]').value = r.title; got.push(r.title); } else miss.push(t('地点'));
+      if (r.amount) {
+        $(`[name=currency][value=${r.currency}]`).checked = true;
+        $('[name=amount]').value = String(r.amount);
+        got.push(moneyText(r.amount, r.currency));
+      } else miss.push(t('金额'));
+      onInput({ target: form });
+      if (r.date && !rateEditing) renderRate();
+      ocrState = { busy: false, text, msg: got.length
+        ? `<span class="pos">${esc(t('已填入：{v}', { v: got.join(' · ') }))}</span>${miss.length ? ' ' + esc(t('（没识别到：{v}）', { v: miss.join('、') })) : ''} ${esc(t('请核对一下'))}`
+        : `<span class="err">${esc(t('没能识别出信息，可以换一张更清楚、更正的照片再试'))}</span>` };
+    } catch (err) {
+      ocrState = { busy: false, text: '', msg: `<span class="err">${esc(t('识别失败：') + err.message)}</span>` };
+    }
+    renderOcr();
+  }
   function renderPhotos() {
+    renderOcr();
     const all = [...f.photos.map((r, i) => ['old', i, S.mediaUrl(r)]), ...f.newPhotos.map((u, i) => ['new', i, u])];
     $('#photos').innerHTML = all.map(([k, i, u]) => `<div class="photo"><img src="${esc(u)}" alt=""><button type="button" class="photo-x" data-f="rmPhoto" data-k="${k}" data-i="${i}" aria-label="${t('删除')}">×</button></div>`).join('')
       + (all.length < 4 && S.canWrite()
@@ -879,8 +920,14 @@ function renderBillForm(editId, params = {}) {
     if (e.target.id === 'photoFile' || e.target.id === 'photoCam') {
       if (e.type !== 'change') return;
       const files = [...e.target.files].slice(0, 4 - f.photos.length - f.newPhotos.length);
-      Promise.all(files.map((x) => resizeImage(x, { max: 1280, quality: 0.8 })))
-        .then((urls) => { f.newPhotos.push(...urls); renderPhotos(); })
+      if (!files.length) return;
+      Promise.all([...files.map((x) => resizeImage(x, { max: 1280, quality: 0.8 })), resizeImage(files[files.length - 1], { max: 2000, quality: 0.9 })])
+        .then((urls) => {
+          f.ocrSrc = urls.pop();
+          f.newPhotos.push(...urls);
+          renderPhotos();
+          if (!String(f.amount).trim()) runOcr(); // 金额还没填：自动识别
+        })
         .catch((err) => toast(err.message, 'err'));
       return;
     }
@@ -913,7 +960,8 @@ function renderBillForm(editId, params = {}) {
     if (act === 'editRate') { rateEditing = true; renderRate(); $('[name=rateManual]').focus(); }
     if (act === 'autoRate') { f.rate = null; f.rateSource = null; rateEditing = false; renderRate(); updateShares(); }
     if (act === 'addMember') addMemberHere(b.dataset.where);
-    if (act === 'rmPhoto') { (b.dataset.k === 'old' ? f.photos : f.newPhotos).splice(+b.dataset.i, 1); renderPhotos(); }
+    if (act === 'rmPhoto') { (b.dataset.k === 'old' ? f.photos : f.newPhotos).splice(+b.dataset.i, 1); if (!f.newPhotos.length) f.ocrSrc = null; renderPhotos(); }
+    if (act === 'ocr') runOcr();
   });
 
   form.addEventListener('submit', async (e) => {

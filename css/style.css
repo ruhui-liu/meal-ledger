@@ -469,3 +469,9 @@ h3 + .stat-p { border-top: 0; }
 .amount-row .seg { display: flex; align-items: stretch; align-self: stretch; }
 .amount-row .seg label { display: flex; }
 .amount-row .seg label > span { display: flex; align-items: center; justify-content: center; width: 100%; }
+
+/* 小票识别 */
+.ocr-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.ocr-row .hint { flex: 1; min-width: 160px; }
+.ocr-raw { margin-top: 6px; font-size: 12.5px; color: var(--muted); }
+.ocr-raw pre { white-space: pre-wrap; max-height: 180px; overflow: auto; background: var(--surface-2); padding: 8px 10px; border-radius: 10px; margin: 6px 0 0; }
