@@ -399,3 +399,10 @@ h3 + .stat-p { border-top: 0; }
 /* 账目筛选结果汇总 */
 .filter-sum { font-size: 13.5px; color: var(--muted); margin: -4px 4px 10px; }
 .filter-sum .money { margin-left: 2px; }
+
+/* 照片头像 */
+.av.has-img { padding: 0; overflow: hidden; background: var(--surface-2) !important; }
+.av.has-img img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
+.av.av-lg { width: 64px; height: 64px; font-size: 20px; }
+.av-edit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.av-edit .btn { cursor: pointer; }

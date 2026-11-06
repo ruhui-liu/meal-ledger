@@ -29,7 +29,32 @@ function color(id) {
   const i = D().members.findIndex((x) => x.id === id);
   return PALETTE[(i < 0 ? 0 : i) % PALETTE.length];
 }
-const av = (id, cls = '') => `<span class="av ${cls}" style="--c:${color(id)}" title="${esc(mem(id).name)}">${esc(mem(id).short || mem(id).name.slice(0, 2))}</span>`;
+const avatarOk = (src) => typeof src === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(src);
+const av = (id, cls = '') => {
+  const m = mem(id);
+  const inner = avatarOk(m.avatar) ? `<img src="${m.avatar}" alt="" loading="lazy" decoding="async">` : esc(m.short || m.name.slice(0, 2));
+  return `<span class="av ${cls}${avatarOk(m.avatar) ? ' has-img' : ''}" style="--c:${color(id)}" title="${esc(m.name)}">${inner}</span>`;
+};
+/** 读取图片 → 居中裁成正方形 → 缩到 128px → JPEG data URL */
+function resizeAvatar(file, size = 128) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(img.naturalWidth, img.naturalHeight);
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(t('照片读取失败'))); };
+    img.src = url;
+  });
+}
 const nm = (id) => esc(mem(id).name);
 const nmShort = (id) => esc(mem(id).short || mem(id).name);
 const curName = (c) => t(CUR[c].name);
@@ -1076,8 +1101,14 @@ function editMember(id, onSaved) {
   const m = id ? d.members.find((x) => x.id === id) : { id: '', name: '', short: '', inactive: false };
   if (!m) return;
   const used = id && (d.bills.some((b) => b.payer === id || b.split.members.includes(id)) || d.payments.some((p) => p.from === id || p.to === id));
+  let avatar = avatarOk(m.avatar) ? m.avatar : '';
+  const avPreview = () => `<span class="av av-lg${avatar ? ' has-img' : ''}" style="--c:${m.color || (id ? color(id) : PALETTE[d.members.length % PALETTE.length])}">${avatar ? `<img src="${avatar}" alt="">` : esc(m.short || m.name.slice(0, 2) || '?')}</span>`;
   openModal(`<h2 class="sheet-t">${t(id ? '编辑成员' : '添加成员')}</h2>
     <form id="memForm" class="form compact">
+      <div class="field"><span class="lbl">${t('头像')}</span>
+        <div class="av-edit"><span id="avPrev">${avPreview()}</span>
+          <label class="btn sm">${t(avatar ? '更换照片' : '上传照片')}<input type="file" id="avFile" accept="image/*" hidden></label>
+          <button type="button" class="btn sm danger" id="avDel" ${avatar ? '' : 'hidden'}>${t('移除照片')}</button></div></div>
       <label class="field"><span class="lbl">${t('名字')}</span><input name="name" value="${esc(m.name)}" placeholder="${t('例如：张三')}" required></label>
       <label class="field"><span class="lbl">${t('简称（头像上显示，1–3 个字）')}</span><input name="short" value="${esc(m.short)}" maxlength="3" placeholder="${t('例如：ZS（不填就用名字前两个字）')}"></label>
       <label class="field"><span class="lbl">${t('颜色')}</span><input name="color" type="color" value="${m.color || (id ? color(id) : PALETTE[d.members.length % PALETTE.length])}"></label>
@@ -1088,13 +1119,25 @@ function editMember(id, onSaved) {
     </form>`, (sheet) => {
     const fm = sheet.querySelector('#memForm');
     if (!id) setTimeout(() => fm.name.focus(), 50);
+    const refreshAv = () => {
+      sheet.querySelector('#avPrev').innerHTML = avPreview();
+      sheet.querySelector('#avDel').hidden = !avatar;
+    };
+    sheet.querySelector('#avFile').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try { avatar = await resizeAvatar(file); refreshAv(); } catch (err) { toast(err.message, 'err'); }
+      e.target.value = '';
+    });
+    sheet.querySelector('#avDel').addEventListener('click', () => { avatar = ''; refreshAv(); });
     fm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = fm.name.value.trim();
       if (!name) return toast(t('请输入名字'), 'err');
       const short = fm.short.value.trim() || name.slice(0, 2);
-      const v = { ...m, id: id || uid('m'), name, short, color: fm.color.value, inactive: !!fm.inactive?.checked };
+      const v = { ...m, id: id || uid('m'), name, short, color: fm.color.value, inactive: !!fm.inactive?.checked, avatar };
       if (!v.inactive) delete v.inactive;
+      if (!v.avatar) delete v.avatar;
       if (!id && D().members.some((x) => x.name === name)) return toast(t('已经有叫 {name} 的成员了', { name }), 'err');
       closeModal();
       const saving = save({ t: 'putMember', v }, `${id ? '修改' : '添加'}成员 ${name}`);
