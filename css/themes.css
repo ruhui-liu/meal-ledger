@@ -328,3 +328,4 @@
 [data-theme="oneui"] .sheet-close { background: var(--tonal); }
 [data-theme="oneui"] .sheet .list, [data-theme="oneui"] .sheet .shares, [data-theme="oneui"] .sheet .note { background: var(--surface-solid); }
 @media (min-width: 820px) { [data-theme="oneui"] .tabbar { display: none; } }
+[data-theme="material"] .tabbar .tab-add.active svg { background: var(--accent); color: var(--accent-ink); }

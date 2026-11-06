@@ -857,7 +857,10 @@ function renderBillForm(editId, params = {}) {
   function renderPhotos() {
     const all = [...f.photos.map((r, i) => ['old', i, S.mediaUrl(r)]), ...f.newPhotos.map((u, i) => ['new', i, u])];
     $('#photos').innerHTML = all.map(([k, i, u]) => `<div class="photo"><img src="${esc(u)}" alt=""><button type="button" class="photo-x" data-f="rmPhoto" data-k="${k}" data-i="${i}" aria-label="${t('删除')}">×</button></div>`).join('')
-      + (all.length < 4 && S.canWrite() ? `<label class="photo add">＋<input type="file" id="photoFile" accept="image/*" multiple hidden></label>` : '');
+      + (all.length < 4 && S.canWrite()
+        ? `<label class="photo add"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>${t('拍照')}</span><input type="file" id="photoCam" accept="image/*" capture="environment" hidden></label>`
+          + `<label class="photo add"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/><circle cx="15.5" cy="9" r="1.5"/></svg><span>${t('相册')}</span><input type="file" id="photoFile" accept="image/*" multiple hidden></label>`
+        : '');
   }
   function addMemberHere(where) {
     editMember(null, (m) => {
@@ -873,7 +876,7 @@ function renderBillForm(editId, params = {}) {
   let snap = '';
   const snapshot = () => [f.split.members.join(), f.split.mode, f.date, f.currency].join('#');
   function onInput(e) {
-    if (e.target.id === 'photoFile') {
+    if (e.target.id === 'photoFile' || e.target.id === 'photoCam') {
       if (e.type !== 'change') return;
       const files = [...e.target.files].slice(0, 4 - f.photos.length - f.newPhotos.length);
       Promise.all(files.map((x) => resizeImage(x, { max: 1280, quality: 0.8 })))

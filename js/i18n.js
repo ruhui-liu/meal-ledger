@@ -367,6 +367,8 @@ const EN = {
   "提醒 {name} 还钱": "Remind {name}",
   "有小票": "receipt",
   "小票照片": "Receipts",
+  "拍照": "Camera",
+  "相册": "Photos",
   "（可选，最多 4 张）": "(optional, up to 4)",
   "小票照片上传失败：": "Receipt upload failed: ",
   "近 12 个月的聚餐花费": "Spending over the last 12 months",
