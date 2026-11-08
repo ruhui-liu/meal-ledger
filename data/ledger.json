@@ -444,8 +444,30 @@
       "createdAt": "2026-11-08T07:01:11.196Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:01:11.196Z"
+    },
+    {
+      "id": "b_mw7hk5wpw5zo",
+      "kind": "meal",
+      "date": "2026-07-01",
+      "meal": "晚餐",
+      "title": "一番饺子",
+      "currency": "JPY",
+      "amount": 2260,
+      "payer": "zq",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:03:22.345Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:03:22.345Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:01:11.640Z"
+  "updatedAt": "2026-11-08T07:03:22.954Z"
 }
