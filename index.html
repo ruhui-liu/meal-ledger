@@ -24,31 +24,33 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="css/style.css?v=20261108075001">
-  <link rel="stylesheet" href="css/themes.css?v=20261108075001">
+  <link rel="stylesheet" href="css/style.css?v=20261108081302">
+  <link rel="stylesheet" href="css/themes.css?v=20261108081302">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Roboto:wght@400;500;700&display=swap">
   <script>
-    // 主题：?theme=xxx 预览，否则用本机保存的
+    // 主题：?theme=xxx 预览，否则用本机保存的；外观：浅色 / 深色 / 跟随系统
     (function () {
       try {
         var q = new URLSearchParams(location.search).get('theme');
         var th = q !== null ? q : localStorage.getItem('fz.theme');
         document.documentElement.dataset.theme = th || 'material';
+        var sc = localStorage.getItem('fz.scheme');
+        if (sc === 'light' || sc === 'dark') document.documentElement.dataset.scheme = sc;
       } catch (e) {}
     })();
   </script>
   <script type="importmap">
   { "imports": {
-    "./js/app.js": "./js/app.js?v=20261108075001",
-    "./js/store.js": "./js/store.js?v=20261108075001",
-    "./js/calc.js": "./js/calc.js?v=20261108075001",
-    "./js/util.js": "./js/util.js?v=20261108075001",
-    "./js/i18n.js": "./js/i18n.js?v=20261108075001",
-    "./js/receipt.js": "./js/receipt.js?v=20261108075001"
+    "./js/app.js": "./js/app.js?v=20261108081302",
+    "./js/store.js": "./js/store.js?v=20261108081302",
+    "./js/calc.js": "./js/calc.js?v=20261108081302",
+    "./js/util.js": "./js/util.js?v=20261108081302",
+    "./js/i18n.js": "./js/i18n.js?v=20261108081302",
+    "./js/receipt.js": "./js/receipt.js?v=20261108081302"
   } }
   </script>
-  <script type="module" src="js/app.js?v=20261108075001"></script>
+  <script type="module" src="js/app.js?v=20261108081302"></script>
 </head>
 <body>
   <header class="topbar">

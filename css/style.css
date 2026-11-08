@@ -19,9 +19,8 @@
   --tabbar-h: 62px;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #161514;
+@media (prefers-color-scheme: dark) /*scheme*/ {
+  :root:not([data-scheme="light"]) { --bg: #161514;
     --surface: #211f1d;
     --surface-2: #2a2724;
     --text: #efebe5;
@@ -37,9 +36,25 @@
     --u-jpy: #ff8fa8;
     --u-cny: #e8c15a;
     --shadow: none;
-    color-scheme: dark;
-  }
+    color-scheme: dark; }
 }
+:root[data-scheme="dark"] { --bg: #161514;
+    --surface: #211f1d;
+    --surface-2: #2a2724;
+    --text: #efebe5;
+    --muted: #a59e94;
+    --line: #38342f;
+    --accent: #f08a4b;
+    --accent-ink: #1d1208;
+    --accent-soft: #3b2619;
+    --pos: #5cd394;
+    --neg: #ff8a80;
+    --warn-bg: #3a3017;
+    --warn-line: #6b5821;
+    --u-jpy: #ff8fa8;
+    --u-cny: #e8c15a;
+    --shadow: none;
+    color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -211,10 +226,12 @@ h3 + .net-row { border-top: 0; }
 }
 .tag.carry { background: #ece6ff; color: #5b3fc4; border-color: #d6ccff; }
 .tag.pay { background: #dff3e8; color: #157347; border-color: #bfe5cf; }
-@media (prefers-color-scheme: dark) {
-  .tag.carry { background: #2e2650; color: #c4b5ff; border-color: #463a7a; }
-  .tag.pay { background: #17382a; color: #8fe0b5; border-color: #24533d; }
+@media (prefers-color-scheme: dark) /*scheme*/ {
+  :root:not([data-scheme="light"]) .tag.carry { background: #2e2650; color: #c4b5ff; border-color: #463a7a; }
+  :root:not([data-scheme="light"]) .tag.pay { background: #17382a; color: #8fe0b5; border-color: #24533d; }
 }
+:root[data-scheme="dark"] .tag.carry { background: #2e2650; color: #c4b5ff; border-color: #463a7a; }
+:root[data-scheme="dark"] .tag.pay { background: #17382a; color: #8fe0b5; border-color: #24533d; }
 .search {
   width: 100%; font: inherit; font-size: 16px; padding: 10px 14px; border-radius: 12px;
   border: 1px solid var(--line); background: var(--surface); color: var(--text);
@@ -442,7 +459,10 @@ h3 + .stat-p { border-top: 0; }
 
 /* ---------- 图表（参考调色板：蓝 = 付了，橙 = 自己吃了） ---------- */
 .viz { --series-1: #2a78d6; --series-2: #eb6834; --grid: color-mix(in srgb, var(--muted) 22%, transparent); }
-@media (prefers-color-scheme: dark) { .viz { --series-1: #3987e5; --series-2: #d95926; } }
+@media (prefers-color-scheme: dark) /*scheme*/ {
+  :root:not([data-scheme="light"]) .viz { --series-1: #3987e5; --series-2: #d95926; }
+}
+:root[data-scheme="dark"] .viz { --series-1: #3987e5; --series-2: #d95926; }
 .vchart { display: flex; align-items: flex-end; gap: 4px; height: 170px; padding: 22px 16px 8px; margin: 0 0 4px;
   background: linear-gradient(var(--grid), var(--grid)) 0 22px / 100% 1px no-repeat, linear-gradient(var(--grid), var(--grid)) 0 calc(22px + (100% - 52px) / 2) / 100% 1px no-repeat; background-origin: content-box; }
 .vcol { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; cursor: default; }

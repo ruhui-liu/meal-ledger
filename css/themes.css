@@ -7,12 +7,12 @@
   --pos: #248a3d; --neg: #d70015; --u-jpy: #8a8a8e; --u-cny: #8a8a8e; --radius: 12px; --shadow: none;
   --warn-bg: #fff8e5; --warn-line: #ffd60a;
 }
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="ios"] {
-    --bg: #000; --surface: #1c1c1e; --surface-2: #2c2c2e; --text: #fff; --muted: #98989f;
-    --line: rgba(84, 84, 88, .55); --accent: #0a84ff; --accent-soft: #0a2a4d; --pos: #30d158; --neg: #ff453a;
-  }
+@media (prefers-color-scheme: dark) /*scheme*/ {
+  :root[data-theme="ios"]:not([data-scheme="light"]) { --bg: #000; --surface: #1c1c1e; --surface-2: #2c2c2e; --text: #fff; --muted: #98989f;
+    --line: rgba(84, 84, 88, .55); --accent: #0a84ff; --accent-soft: #0a2a4d; --pos: #30d158; --neg: #ff453a; }
 }
+:root[data-theme="ios"][data-scheme="dark"] { --bg: #000; --surface: #1c1c1e; --surface-2: #2c2c2e; --text: #fff; --muted: #98989f;
+    --line: rgba(84, 84, 88, .55); --accent: #0a84ff; --accent-soft: #0a2a4d; --pos: #30d158; --neg: #ff453a; }
 [data-theme="ios"] body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans", sans-serif; letter-spacing: -.01em; }
 [data-theme="ios"] h1 { font-size: 32px; font-weight: 800; letter-spacing: -.02em; }
 [data-theme="ios"] .card { border: 0; border-radius: 12px; }
@@ -42,12 +42,12 @@
   --pos: #12a383; --neg: #f2622e; --u-jpy: #6f7f7b; --u-cny: #6f7f7b; --radius: 10px;
   --shadow: 0 1px 2px rgba(0, 40, 30, .05);
 }
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="mint"] {
-    --bg: #101615; --surface: #18201e; --surface-2: #1f2a27; --text: #e8f1ee; --muted: #8fa29c;
-    --line: #2a3733; --accent: #2fd3ae; --accent-ink: #062019; --accent-soft: #13332b; --pos: #37d6b0; --neg: #ff8559;
-  }
+@media (prefers-color-scheme: dark) /*scheme*/ {
+  :root[data-theme="mint"]:not([data-scheme="light"]) { --bg: #101615; --surface: #18201e; --surface-2: #1f2a27; --text: #e8f1ee; --muted: #8fa29c;
+    --line: #2a3733; --accent: #2fd3ae; --accent-ink: #062019; --accent-soft: #13332b; --pos: #37d6b0; --neg: #ff8559; }
 }
+:root[data-theme="mint"][data-scheme="dark"] { --bg: #101615; --surface: #18201e; --surface-2: #1f2a27; --text: #e8f1ee; --muted: #8fa29c;
+    --line: #2a3733; --accent: #2fd3ae; --accent-ink: #062019; --accent-soft: #13332b; --pos: #37d6b0; --neg: #ff8559; }
 [data-theme="mint"] .topbar { background: var(--accent); border-bottom: 0; }
 [data-theme="mint"] .brand { color: #fff; }
 [data-theme="mint"] .brand img { border-radius: 7px; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
@@ -105,12 +105,12 @@
   --line: #e5e5e5; --accent: #58cc02; --accent-ink: #fff; --accent-soft: #e9f9da; --accent-deep: #46a302;
   --pos: #58a700; --neg: #ff4b4b; --u-jpy: #1cb0f6; --u-cny: #ff9600; --radius: 16px; --shadow: none;
 }
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="play"] {
-    --bg: #131f24; --surface: #131f24; --surface-2: #1b2b32; --text: #f1f7fb; --muted: #8fa3ad;
-    --line: #37464f; --accent-soft: #1f3a10; --pos: #79e01c;
-  }
+@media (prefers-color-scheme: dark) /*scheme*/ {
+  :root[data-theme="play"]:not([data-scheme="light"]) { --bg: #131f24; --surface: #131f24; --surface-2: #1b2b32; --text: #f1f7fb; --muted: #8fa3ad;
+    --line: #37464f; --accent-soft: #1f3a10; --pos: #79e01c; }
 }
+:root[data-theme="play"][data-scheme="dark"] { --bg: #131f24; --surface: #131f24; --surface-2: #1b2b32; --text: #f1f7fb; --muted: #8fa3ad;
+    --line: #37464f; --accent-soft: #1f3a10; --pos: #79e01c; }
 [data-theme="play"] body { font-family: "Nunito", "PingFang SC", "Hiragino Maru Gothic ProN", "Noto Sans SC", sans-serif; font-weight: 600; }
 [data-theme="play"] h1 { font-size: 26px; font-weight: 900; }
 [data-theme="play"] .card { border: 2px solid var(--line); }
@@ -145,14 +145,16 @@
   --pos: #146c2e; --neg: #b3261e; --u-jpy: #5e5e5e; --u-cny: #5e5e5e; --radius: 20px; --shadow: none;
   --warn-bg: #fdf3d8; --warn-line: transparent;
 }
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="material"] {
-    --bg: #131314; --surface: #1e1f20; --surface-2: #282a2c; --surface-3: #333537; --text: #e3e3e3; --muted: #a8aaac;
+@media (prefers-color-scheme: dark) /*scheme*/ {
+  :root[data-theme="material"]:not([data-scheme="light"]) { --bg: #131314; --surface: #1e1f20; --surface-2: #282a2c; --surface-3: #333537; --text: #e3e3e3; --muted: #a8aaac;
     --line: #444746; --outline: #8e918f; --accent: #a8c7fa; --accent-ink: #062e6f; --accent-soft: #0842a0;
     --sec: #004a77; --on-sec: #c2e7ff; --pos: #6dd58c; --neg: #f2b8b5; --u-jpy: #a8aaac; --u-cny: #a8aaac;
-    --warn-bg: #3d3420;
-  }
+    --warn-bg: #3d3420; }
 }
+:root[data-theme="material"][data-scheme="dark"] { --bg: #131314; --surface: #1e1f20; --surface-2: #282a2c; --surface-3: #333537; --text: #e3e3e3; --muted: #a8aaac;
+    --line: #444746; --outline: #8e918f; --accent: #a8c7fa; --accent-ink: #062e6f; --accent-soft: #0842a0;
+    --sec: #004a77; --on-sec: #c2e7ff; --pos: #6dd58c; --neg: #f2b8b5; --u-jpy: #a8aaac; --u-cny: #a8aaac;
+    --warn-bg: #3d3420; }
 [data-theme="material"] body { font-family: Roboto, "Noto Sans SC", "PingFang SC", "Hiragino Sans", "Microsoft YaHei", sans-serif; letter-spacing: .01em; }
 [data-theme="material"] .topbar { background: var(--bg); border-bottom: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
 [data-theme="material"] .brand { font-weight: 500; font-size: 20px; }
@@ -234,15 +236,18 @@
     radial-gradient(70% 45% at 0% 62%, #dff3ef 0%, transparent 100%), radial-gradient(80% 50% at 100% 100%, #dde8fb 0%, transparent 100%);
   --nav-bg: rgba(255, 255, 255, .92); --nav-on: #e1e1e6; --sun: #e0342b; --sat: #2a6fdb;
 }
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="oneui"] {
-    --bg: #000000; --surface: rgba(29, 29, 32, .9); --surface-solid: #1d1d20; --surface-2: #2a2a2e; --text: #f5f5f7; --muted: #8f8f96;
+@media (prefers-color-scheme: dark) /*scheme*/ {
+  :root[data-theme="oneui"]:not([data-scheme="light"]) { --bg: #000000; --surface: rgba(29, 29, 32, .9); --surface-solid: #1d1d20; --surface-2: #2a2a2e; --text: #f5f5f7; --muted: #8f8f96;
     --line: #2d2d31; --accent: #5b94ff; --accent-soft: #16294d; --tonal: #2e2e33; --on-tonal: #f5f5f7; --pos: #3fd18b; --neg: #ff6259;
     --bg: #07080d; --surface: rgba(33, 36, 52, .78); --surface-solid: #1d1f2b; --surface-2: #2a2d3c; --tonal: #2f3242; --line: #303446;
     --warn-bg: #2e2716; --nav-bg: rgba(38, 40, 54, .94); --nav-on: #454a60; --sun: #ff6b62; --sat: #6aa1ff;
-    --hero: radial-gradient(80% 45% at 10% 0%, #232a52 0%, transparent 100%), radial-gradient(80% 50% at 100% 100%, #1d2547 0%, transparent 100%);
-  }
+    --hero: radial-gradient(80% 45% at 10% 0%, #232a52 0%, transparent 100%), radial-gradient(80% 50% at 100% 100%, #1d2547 0%, transparent 100%); }
 }
+:root[data-theme="oneui"][data-scheme="dark"] { --bg: #000000; --surface: rgba(29, 29, 32, .9); --surface-solid: #1d1d20; --surface-2: #2a2a2e; --text: #f5f5f7; --muted: #8f8f96;
+    --line: #2d2d31; --accent: #5b94ff; --accent-soft: #16294d; --tonal: #2e2e33; --on-tonal: #f5f5f7; --pos: #3fd18b; --neg: #ff6259;
+    --bg: #07080d; --surface: rgba(33, 36, 52, .78); --surface-solid: #1d1f2b; --surface-2: #2a2d3c; --tonal: #2f3242; --line: #303446;
+    --warn-bg: #2e2716; --nav-bg: rgba(38, 40, 54, .94); --nav-on: #454a60; --sun: #ff6b62; --sat: #6aa1ff;
+    --hero: radial-gradient(80% 45% at 10% 0%, #232a52 0%, transparent 100%), radial-gradient(80% 50% at 100% 100%, #1d2547 0%, transparent 100%); }
 [data-theme="oneui"] body { background: var(--hero), var(--bg); background-attachment: fixed; font-family: "Samsung Sans", "SamsungOne", Roboto, "Noto Sans SC", "PingFang SC", sans-serif; font-size: 16px; }
 /* 顶栏透明，让渐变透出来 */
 [data-theme="oneui"] .topbar { background: transparent; border-bottom: 0; backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3); }
@@ -316,9 +321,10 @@
 [data-theme="oneui"] .tabbar a.active svg { stroke-width: 2.4; }
 [data-theme="oneui"] .tabbar .tab-add svg { width: 26px; height: 26px; padding: 0; background: none; stroke: currentColor; border-radius: 0; }
 [data-theme="oneui"] .tabbar .tab-add, [data-theme="oneui"] .tabbar .tab-add.active { color: var(--text); }
-@media (prefers-color-scheme: dark) {
-  [data-theme="oneui"] .tabbar { box-shadow: 0 0 0 1px var(--line), 0 6px 24px rgba(0, 0, 0, .5); }
+@media (prefers-color-scheme: dark) /*scheme*/ {
+  :root[data-theme="oneui"]:not([data-scheme="light"]) .tabbar { box-shadow: 0 0 0 1px var(--line), 0 6px 24px rgba(0, 0, 0, .5); }
 }
+:root[data-theme="oneui"][data-scheme="dark"] .tabbar { box-shadow: 0 0 0 1px var(--line), 0 6px 24px rgba(0, 0, 0, .5); }
 [data-theme="oneui"] .view { padding-bottom: calc(64px + 14px + env(safe-area-inset-bottom) + 28px); }
 [data-theme="oneui"] .form-actions { bottom: calc(64px + 22px + env(safe-area-inset-bottom)); }
 @media (min-width: 820px) { [data-theme="oneui"] .form-actions { bottom: 12px; } }

@@ -340,6 +340,11 @@ const ACTIONS = {
   },
   setMe: (id) => { S.saveConfig({ me: id }); toast(t('已设定：我是 {name}', { name: mem(id).name })); render(); },
   setLang: (l) => switchLang(l),
+  setScheme: (sc) => {
+    try { if (sc === 'light' || sc === 'dark') localStorage.setItem('fz.scheme', sc); else localStorage.removeItem('fz.scheme'); } catch { /* ignore */ }
+    if (sc === 'light' || sc === 'dark') document.documentElement.dataset.scheme = sc; else delete document.documentElement.dataset.scheme;
+    render();
+  },
   pickLedger: () => openLedgerPicker(),
   useLedger: async (id) => {
     closeModal();
@@ -1445,6 +1450,10 @@ function renderSettings() {
     ${syncErrorNote()}
     <section class="card"><h3>${t('语言 / Language')}</h3>
       <div class="chips pad"><button class="chip-btn ${getLang() === 'zh' ? 'on' : ''}" data-act="setLang" data-arg="zh">中文</button><button class="chip-btn ${getLang() === 'en' ? 'on' : ''}" data-act="setLang" data-arg="en">English</button></div>
+    </section>
+
+    <section class="card"><h3>${t('外观')} <small class="muted">${t('（只保存在这台设备）')}</small></h3>
+      <div class="chips pad">${[['system', '跟随系统'], ['light', '浅色'], ['dark', '深色']].map(([v, l]) => `<button class="chip-btn ${(document.documentElement.dataset.scheme || 'system') === v ? 'on' : ''}" data-act="setScheme" data-arg="${v}">${t(l)}</button>`).join('')}</div>
     </section>
 
     <section class="card"><h3>${t('风格')} <small class="muted">${t('（只保存在这台设备）')}</small></h3>
