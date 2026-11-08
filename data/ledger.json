@@ -1105,8 +1105,31 @@
       "createdAt": "2026-11-08T07:31:20.101Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:31:20.101Z"
+    },
+    {
+      "id": "b_mw7ikq8sgjw0",
+      "kind": "meal",
+      "date": "2026-09-07",
+      "meal": "晚餐",
+      "title": "MOMO",
+      "currency": "JPY",
+      "amount": 17490,
+      "payer": "rq",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rq",
+          "zq",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:31:48.316Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:31:48.316Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:31:20.811Z"
+  "updatedAt": "2026-11-08T07:31:49.391Z"
 }
