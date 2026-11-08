@@ -917,8 +917,33 @@
       "createdAt": "2026-11-08T07:26:55.750Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:26:55.750Z"
+    },
+    {
+      "id": "b_mw7ift4wd6f6",
+      "kind": "meal",
+      "date": "2026-06-13",
+      "meal": "晚餐",
+      "title": "烧肉的和民",
+      "currency": "JPY",
+      "amount": 12500,
+      "payer": "rh",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "rq",
+          "zq",
+          "b",
+          "yf"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:27:58.784Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:27:58.784Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:27:40.708Z"
+  "updatedAt": "2026-11-08T07:27:59.322Z"
 }
