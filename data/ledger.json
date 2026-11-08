@@ -1082,8 +1082,31 @@
       "createdAt": "2026-11-08T07:30:59.796Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:30:59.796Z"
+    },
+    {
+      "id": "b_mw7ik4h1jk3a",
+      "kind": "meal",
+      "date": "2026-06-19",
+      "meal": "晚餐",
+      "title": "粽子",
+      "currency": "JPY",
+      "amount": 5000,
+      "payer": "rq",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "rq",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:31:20.101Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:31:20.101Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:31:00.217Z"
+  "updatedAt": "2026-11-08T07:31:20.811Z"
 }
