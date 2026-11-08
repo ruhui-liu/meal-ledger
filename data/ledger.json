@@ -655,8 +655,31 @@
       "createdAt": "2026-11-08T07:10:14.991Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:10:14.991Z"
+    },
+    {
+      "id": "b_mw7hx9cfemar",
+      "kind": "meal",
+      "date": "2026-09-30",
+      "meal": "晚餐",
+      "title": "大众酒厂",
+      "currency": "JPY",
+      "amount": 12614,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:13:33.327Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:13:33.327Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:10:15.463Z"
+  "updatedAt": "2026-11-08T07:13:34.216Z"
 }
