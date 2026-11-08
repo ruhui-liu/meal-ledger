@@ -328,8 +328,30 @@
       "createdAt": "2026-11-08T06:38:43.150Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T06:38:52.742Z"
+    },
+    {
+      "id": "b_mw7gr7c9xp7n",
+      "kind": "meal",
+      "date": "2026-08-18",
+      "meal": "晚餐",
+      "title": "爆米花",
+      "currency": "JPY",
+      "amount": 1900,
+      "payer": "zq",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T06:40:51.177Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T06:40:51.177Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T06:38:53.551Z"
+  "updatedAt": "2026-11-08T06:40:51.690Z"
 }
