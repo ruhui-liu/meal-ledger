@@ -706,8 +706,30 @@
       "createdAt": "2026-11-08T07:15:33.197Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:15:33.197Z"
+    },
+    {
+      "id": "b_mw7i1vr868cw",
+      "kind": "meal",
+      "date": "2026-08-30",
+      "meal": "晚餐",
+      "title": "寿司郎",
+      "currency": "JPY",
+      "amount": 5310,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:17:08.996Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:17:08.996Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:15:33.686Z"
+  "updatedAt": "2026-11-08T07:17:09.585Z"
 }
