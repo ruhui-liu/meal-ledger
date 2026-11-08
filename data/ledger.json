@@ -772,8 +772,31 @@
       "createdAt": "2026-11-08T07:20:51.606Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:20:51.606Z"
+    },
+    {
+      "id": "b_mw7i8ky3m873",
+      "kind": "meal",
+      "date": "2026-08-18",
+      "meal": "其他",
+      "title": "电影 蜘蛛人",
+      "currency": "JPY",
+      "amount": 10800,
+      "payer": "rh",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "rq",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:22:21.579Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:22:21.579Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:21:04.132Z"
+  "updatedAt": "2026-11-08T07:22:22.288Z"
 }
