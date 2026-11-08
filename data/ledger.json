@@ -728,8 +728,30 @@
       "createdAt": "2026-11-08T07:17:08.996Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:17:08.996Z"
+    },
+    {
+      "id": "b_mw7i2skwuqd6",
+      "kind": "meal",
+      "date": "2026-08-30",
+      "meal": "其他",
+      "title": "爆米花",
+      "currency": "JPY",
+      "amount": 1450,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:17:51.536Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:17:51.536Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:17:09.585Z"
+  "updatedAt": "2026-11-08T07:17:52.378Z"
 }
