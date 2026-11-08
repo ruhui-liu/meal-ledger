@@ -96,23 +96,22 @@
       "meal": "",
       "title": "Excel 总账结转（截至 5/26，欠 刘汝晖 的人民币）",
       "currency": "CNY",
-      "amount": 1833.11,
+      "amount": 1160.07,
       "payer": "rh",
       "method": "",
       "split": {
         "mode": "amount",
         "members": [
-          "t",
-          "yf"
+          "t"
         ],
         "values": {
-          "t": 1160.07,
-          "yf": 673.04
+          "t": 1160.07
         }
       },
       "note": "来自 Excel「summary_26.01.15~26.05.26」的「总净额结算」(to RH CNY)，已是两两抵消后的净额。除王韬、张宇帆外，其他人这部分已结清（张睿骐、郑照强、黄博），已从结转中去掉。张宇帆的 673.04 来自 2026.01 以前的旧总账（Yufan 列 F25）。",
       "createdAt": "2026-11-05T16:08:19.000Z",
-      "createdBy": "rh"
+      "createdBy": "rh",
+      "updatedAt": "2026-11-08T08:02:36.923Z"
     },
     {
       "id": "carry_20260526_zq_jpy",
@@ -1177,5 +1176,5 @@
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:42:12.765Z"
+  "updatedAt": "2026-11-08T08:02:37.361Z"
 }
