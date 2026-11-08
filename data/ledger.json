@@ -1011,8 +1011,31 @@
       "createdAt": "2026-11-08T07:29:37.278Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:29:37.278Z"
+    },
+    {
+      "id": "b_mw7iin302vjr",
+      "kind": "meal",
+      "date": "2026-06-04",
+      "meal": "其他",
+      "title": "电影 马里奥",
+      "currency": "JPY",
+      "amount": 4500,
+      "payer": "rh",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:30:10.908Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:30:10.908Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:29:38.181Z"
+  "updatedAt": "2026-11-08T07:30:11.666Z"
 }
