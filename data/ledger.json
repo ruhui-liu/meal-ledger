@@ -629,8 +629,34 @@
       "createdAt": "2026-11-08T07:07:25.466Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:07:25.466Z"
+    },
+    {
+      "id": "b_mw7ht0b3ky6y",
+      "kind": "meal",
+      "date": "2026-10-30",
+      "meal": "午餐",
+      "title": "食为天",
+      "currency": "JPY",
+      "amount": 3440,
+      "payer": "rh",
+      "method": "微信支付",
+      "split": {
+        "mode": "amount",
+        "members": [
+          "rh",
+          "zq"
+        ],
+        "values": {
+          "rh": 2460,
+          "zq": 980
+        }
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:10:14.991Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:10:14.991Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:07:26.298Z"
+  "updatedAt": "2026-11-08T07:10:15.463Z"
 }
