@@ -817,8 +817,33 @@
       "createdAt": "2026-11-08T07:24:02.009Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:24:02.009Z"
+    },
+    {
+      "id": "b_mw7ibgys3s97",
+      "kind": "meal",
+      "date": "2026-07-18",
+      "meal": "晚餐",
+      "title": "鸟贵族",
+      "currency": "JPY",
+      "amount": 19500,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "t",
+          "rq",
+          "zq",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:24:36.388Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:24:36.388Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:24:02.446Z"
+  "updatedAt": "2026-11-08T07:24:36.826Z"
 }
