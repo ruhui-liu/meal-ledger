@@ -1150,8 +1150,32 @@
       "createdAt": "2026-11-08T07:37:01.509Z",
       "createdBy": "zq",
       "updatedAt": "2026-11-08T07:37:01.509Z"
+    },
+    {
+      "id": "b_mw7iy3p932iv",
+      "kind": "meal",
+      "date": "2026-09-21",
+      "meal": "晚餐",
+      "title": "大众酒厂 chibachan",
+      "currency": "JPY",
+      "amount": 15276,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "t",
+          "rq",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:42:12.285Z",
+      "createdBy": "zq",
+      "updatedAt": "2026-11-08T07:42:12.285Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:37:01.947Z"
+  "updatedAt": "2026-11-08T07:42:12.765Z"
 }
