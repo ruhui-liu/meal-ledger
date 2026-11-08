@@ -842,8 +842,30 @@
       "createdAt": "2026-11-08T07:24:36.388Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:24:36.388Z"
+    },
+    {
+      "id": "b_mw7icly2o40g",
+      "kind": "meal",
+      "date": "2026-07-16",
+      "meal": "晚餐",
+      "title": "食堂",
+      "currency": "JPY",
+      "amount": 1551,
+      "payer": "rh",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:25:29.498Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:25:29.498Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:24:36.826Z"
+  "updatedAt": "2026-11-08T07:25:30.010Z"
 }
