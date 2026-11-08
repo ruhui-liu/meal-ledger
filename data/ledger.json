@@ -421,8 +421,31 @@
       "createdAt": "2026-11-08T07:00:02.976Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:00:02.976Z"
+    },
+    {
+      "id": "b_mw7hhcpowfdz",
+      "kind": "meal",
+      "date": "2026-07-11",
+      "meal": "晚餐",
+      "title": "四季香",
+      "currency": "JPY",
+      "amount": 12098,
+      "payer": "zq",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "rq",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:01:11.196Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:01:11.196Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:00:03.897Z"
+  "updatedAt": "2026-11-08T07:01:11.640Z"
 }
