@@ -584,8 +584,30 @@
       "createdAt": "2026-11-08T07:06:21.901Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:06:21.901Z"
+    },
+    {
+      "id": "b_mw7holdqeada",
+      "kind": "meal",
+      "date": "2026-06-11",
+      "meal": "晚餐",
+      "title": "新龙门",
+      "currency": "JPY",
+      "amount": 3210,
+      "payer": "zq",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:06:49.022Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:06:49.022Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:06:22.312Z"
+  "updatedAt": "2026-11-08T07:06:49.581Z"
 }
