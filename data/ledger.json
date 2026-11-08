@@ -732,7 +732,7 @@
     {
       "id": "b_mw7i2skwuqd6",
       "kind": "meal",
-      "date": "2026-08-30",
+      "date": "2026-08-31",
       "meal": "其他",
       "title": "爆米花",
       "currency": "JPY",
@@ -749,7 +749,7 @@
       "note": "",
       "createdAt": "2026-11-08T07:17:51.536Z",
       "createdBy": "",
-      "updatedAt": "2026-11-08T07:17:51.536Z"
+      "updatedAt": "2026-11-08T07:21:03.592Z"
     },
     {
       "id": "b_mw7i6niu0dua",
@@ -775,5 +775,5 @@
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:20:52.066Z"
+  "updatedAt": "2026-11-08T07:21:04.132Z"
 }
