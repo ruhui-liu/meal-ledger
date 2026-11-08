@@ -889,8 +889,36 @@
       "createdAt": "2026-11-08T07:26:11.305Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:26:11.305Z"
+    },
+    {
+      "id": "b_mw7ieghy4d9j",
+      "kind": "meal",
+      "date": "2026-06-26",
+      "meal": "晚餐",
+      "title": "comekome",
+      "currency": "JPY",
+      "amount": 4840,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "amount",
+        "members": [
+          "rh",
+          "zq",
+          "b"
+        ],
+        "values": {
+          "rh": 1630,
+          "zq": 1670,
+          "b": 1540
+        }
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:26:55.750Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:26:55.750Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:26:11.872Z"
+  "updatedAt": "2026-11-08T07:26:56.203Z"
 }
