@@ -259,8 +259,31 @@
       "createdAt": "2026-11-08T06:35:35.252Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T06:35:43.008Z"
+    },
+    {
+      "id": "b_mw7gliesovbp",
+      "kind": "meal",
+      "date": "2026-09-02",
+      "meal": "晚餐",
+      "title": "寿司郎",
+      "currency": "JPY",
+      "amount": 9780,
+      "payer": "zq",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rq",
+          "zq",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T06:36:25.588Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T06:36:25.588Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T06:35:43.416Z"
+  "updatedAt": "2026-11-08T06:36:26.287Z"
 }
