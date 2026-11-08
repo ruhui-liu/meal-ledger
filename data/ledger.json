@@ -517,8 +517,31 @@
       "createdAt": "2026-11-08T07:04:54.689Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:04:54.689Z"
+    },
+    {
+      "id": "b_mw7hmsqsqjwv",
+      "kind": "meal",
+      "date": "2026-06-19",
+      "meal": "晚餐",
+      "title": "居酒屋",
+      "currency": "JPY",
+      "amount": 7029,
+      "payer": "zq",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "rq",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:05:25.252Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:05:25.252Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:04:55.148Z"
+  "updatedAt": "2026-11-08T07:05:26.096Z"
 }
