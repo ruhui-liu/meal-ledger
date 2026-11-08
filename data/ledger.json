@@ -1058,8 +1058,32 @@
       "createdAt": "2026-11-08T07:30:35.203Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:30:35.203Z"
+    },
+    {
+      "id": "b_mw7ijot01qpg",
+      "kind": "meal",
+      "date": "2026-06-01",
+      "meal": "晚餐",
+      "title": "牛角",
+      "currency": "JPY",
+      "amount": 19184,
+      "payer": "rh",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "rq",
+          "zq",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:30:59.796Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:30:59.796Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:30:35.651Z"
+  "updatedAt": "2026-11-08T07:31:00.217Z"
 }
