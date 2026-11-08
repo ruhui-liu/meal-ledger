@@ -562,8 +562,30 @@
       "createdAt": "2026-11-08T07:05:57.263Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:05:57.263Z"
+    },
+    {
+      "id": "b_mw7ho0gdm25o",
+      "kind": "meal",
+      "date": "2026-06-19",
+      "meal": "晚餐",
+      "title": "星巴克",
+      "currency": "JPY",
+      "amount": 1356,
+      "payer": "zq",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:06:21.901Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:06:21.901Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:05:57.807Z"
+  "updatedAt": "2026-11-08T07:06:22.312Z"
 }
