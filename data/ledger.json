@@ -309,7 +309,7 @@
       "id": "b_mw7gogjy99bs",
       "kind": "meal",
       "date": "2026-10-28",
-      "meal": "夜宵",
+      "meal": "晚餐",
       "title": "烧肉的和民",
       "currency": "JPY",
       "amount": 12000,
@@ -327,9 +327,9 @@
       "note": "",
       "createdAt": "2026-11-08T06:38:43.150Z",
       "createdBy": "",
-      "updatedAt": "2026-11-08T06:38:43.150Z"
+      "updatedAt": "2026-11-08T06:38:52.742Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T06:38:43.807Z"
+  "updatedAt": "2026-11-08T06:38:53.551Z"
 }
