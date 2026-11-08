@@ -350,8 +350,30 @@
       "createdAt": "2026-11-08T06:40:51.177Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T06:40:51.177Z"
+    },
+    {
+      "id": "b_mw7h7da3ayk5",
+      "kind": "meal",
+      "date": "2026-08-01",
+      "meal": "晚餐",
+      "title": "台湾屋台",
+      "currency": "JPY",
+      "amount": 3160,
+      "payer": "zq",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T06:53:25.371Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T06:53:25.371Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T06:40:51.690Z"
+  "updatedAt": "2026-11-08T06:53:25.839Z"
 }
