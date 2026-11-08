@@ -678,8 +678,36 @@
       "createdAt": "2026-11-08T07:13:33.327Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:13:33.327Z"
+    },
+    {
+      "id": "b_mw7hztu50i5t",
+      "kind": "meal",
+      "date": "2026-08-29",
+      "meal": "晚餐",
+      "title": "千里香",
+      "currency": "JPY",
+      "amount": 18337,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "ratio",
+        "members": [
+          "rh",
+          "rq",
+          "zq"
+        ],
+        "values": {
+          "rh": 50,
+          "rq": 25,
+          "zq": 25
+        }
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:15:33.197Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:15:33.197Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:13:34.216Z"
+  "updatedAt": "2026-11-08T07:15:33.686Z"
 }
