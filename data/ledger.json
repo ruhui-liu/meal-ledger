@@ -864,8 +864,33 @@
       "createdAt": "2026-11-08T07:25:29.498Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:25:29.498Z"
+    },
+    {
+      "id": "b_mw7idi7dhhwm",
+      "kind": "meal",
+      "date": "2026-06-27",
+      "meal": "晚餐",
+      "title": "西安刀削面",
+      "currency": "JPY",
+      "amount": 6730,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "t",
+          "rq",
+          "zq",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:26:11.305Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:26:11.305Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:25:30.010Z"
+  "updatedAt": "2026-11-08T07:26:11.872Z"
 }
