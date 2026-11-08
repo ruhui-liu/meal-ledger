@@ -989,8 +989,30 @@
       "createdAt": "2026-11-08T07:29:03.263Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:29:03.263Z"
+    },
+    {
+      "id": "b_mw7ihx4u764s",
+      "kind": "meal",
+      "date": "2026-06-05",
+      "meal": "晚餐",
+      "title": "金太饭店",
+      "currency": "JPY",
+      "amount": 2200,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:29:37.278Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:29:37.278Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:29:03.747Z"
+  "updatedAt": "2026-11-08T07:29:38.181Z"
 }
