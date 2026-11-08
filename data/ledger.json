@@ -1128,8 +1128,30 @@
       "createdAt": "2026-11-08T07:31:48.316Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:31:48.316Z"
+    },
+    {
+      "id": "b_mw7irfwlk84e",
+      "kind": "meal",
+      "date": "2026-10-17",
+      "meal": "午餐",
+      "title": "火焰山",
+      "currency": "JPY",
+      "amount": 8778,
+      "payer": "rh",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "t"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:37:01.509Z",
+      "createdBy": "zq",
+      "updatedAt": "2026-11-08T07:37:01.509Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:31:49.391Z"
+  "updatedAt": "2026-11-08T07:37:01.947Z"
 }
