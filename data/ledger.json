@@ -1175,6 +1175,20 @@
       "updatedAt": "2026-11-08T07:42:12.285Z"
     }
   ],
-  "payments": [],
-  "updatedAt": "2026-11-08T08:02:37.361Z"
+  "payments": [
+    {
+      "id": "p_mw7lyhey9rsa",
+      "date": "2026-11-08",
+      "from": "yf",
+      "to": "rh",
+      "currency": "JPY",
+      "amount": 15995,
+      "method": "刷卡",
+      "note": "",
+      "createdAt": "2026-11-08T09:06:28.904Z",
+      "createdBy": "rq",
+      "updatedAt": "2026-11-08T09:06:28.904Z"
+    }
+  ],
+  "updatedAt": "2026-11-08T09:06:29.441Z"
 }
