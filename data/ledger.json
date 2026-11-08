@@ -1034,8 +1034,32 @@
       "createdAt": "2026-11-08T07:30:10.908Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:30:10.908Z"
+    },
+    {
+      "id": "b_mw7ij5tv2tc7",
+      "kind": "meal",
+      "date": "2026-06-04",
+      "meal": "晚餐",
+      "title": "电影 不可能的任务",
+      "currency": "JPY",
+      "amount": 5200,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "rq",
+          "zq",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:30:35.203Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:30:35.203Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:30:11.666Z"
+  "updatedAt": "2026-11-08T07:30:35.651Z"
 }
