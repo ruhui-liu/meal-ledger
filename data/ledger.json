@@ -1189,7 +1189,20 @@
       "createdAt": "2026-11-08T09:06:28.904Z",
       "createdBy": "rq",
       "updatedAt": "2026-11-08T09:06:28.904Z"
+    },
+    {
+      "id": "p_mw7rr68ngze9",
+      "date": "2026-11-08",
+      "from": "rq",
+      "to": "rh",
+      "currency": "JPY",
+      "amount": 35019,
+      "method": "其他",
+      "note": "",
+      "createdAt": "2026-11-08T11:48:45.525Z",
+      "createdBy": "rh",
+      "updatedAt": "2026-11-08T11:48:45.525Z"
     }
   ],
-  "updatedAt": "2026-11-08T09:07:16.077Z"
+  "updatedAt": "2026-11-08T11:48:46.803Z"
 }
