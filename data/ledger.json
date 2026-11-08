@@ -304,8 +304,32 @@
       "createdAt": "2026-11-08T06:38:07.537Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T06:38:07.537Z"
+    },
+    {
+      "id": "b_mw7gogjy99bs",
+      "kind": "meal",
+      "date": "2026-10-28",
+      "meal": "夜宵",
+      "title": "烧肉的和民",
+      "currency": "JPY",
+      "amount": 12000,
+      "payer": "zq",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq",
+          "b",
+          "m_mw3stf0yk8j3"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T06:38:43.150Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T06:38:43.150Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T06:38:08.055Z"
+  "updatedAt": "2026-11-08T06:38:43.807Z"
 }
