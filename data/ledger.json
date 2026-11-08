@@ -237,8 +237,30 @@
       "createdAt": "2026-11-08T06:34:38.580Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T06:34:38.580Z"
+    },
+    {
+      "id": "b_mw7gkfkkw1jb",
+      "kind": "meal",
+      "date": "2026-09-08",
+      "meal": "晚餐",
+      "title": "冒烤鸭烫肚",
+      "currency": "JPY",
+      "amount": 5868,
+      "payer": "zq",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rq",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T06:35:35.252Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T06:35:35.252Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T06:34:39.067Z"
+  "updatedAt": "2026-11-08T06:35:35.827Z"
 }
