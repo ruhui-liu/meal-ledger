@@ -372,8 +372,31 @@
       "createdAt": "2026-11-08T06:53:25.371Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T06:53:25.371Z"
+    },
+    {
+      "id": "b_mw7he978v31h",
+      "kind": "meal",
+      "date": "2026-11-01",
+      "meal": "午餐",
+      "title": "麻婆唐府",
+      "currency": "JPY",
+      "amount": 7436,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "t",
+          "b"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T06:58:46.676Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T06:58:46.676Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T06:53:25.839Z"
+  "updatedAt": "2026-11-08T06:58:47.130Z"
 }
