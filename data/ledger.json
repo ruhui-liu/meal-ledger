@@ -466,8 +466,31 @@
       "createdAt": "2026-11-08T07:03:22.345Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:03:22.345Z"
+    },
+    {
+      "id": "b_mw7hl14by9ci",
+      "kind": "meal",
+      "date": "2026-06-25",
+      "meal": "晚餐",
+      "title": "九年食班",
+      "currency": "JPY",
+      "amount": 3700,
+      "payer": "zq",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "rq",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:04:02.795Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:04:02.795Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:03:22.954Z"
+  "updatedAt": "2026-11-08T07:04:03.640Z"
 }
