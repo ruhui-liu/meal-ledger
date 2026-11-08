@@ -795,8 +795,30 @@
       "createdAt": "2026-11-08T07:22:21.579Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:22:21.579Z"
+    },
+    {
+      "id": "b_mw7iaqftt48k",
+      "kind": "meal",
+      "date": "2026-08-02",
+      "meal": "晚餐",
+      "title": "麦当劳",
+      "currency": "JPY",
+      "amount": 1840,
+      "payer": "rh",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:24:02.009Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:24:02.009Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:22:22.288Z"
+  "updatedAt": "2026-11-08T07:24:02.446Z"
 }
