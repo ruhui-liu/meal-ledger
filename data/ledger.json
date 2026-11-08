@@ -540,8 +540,30 @@
       "createdAt": "2026-11-08T07:05:25.252Z",
       "createdBy": "",
       "updatedAt": "2026-11-08T07:05:25.252Z"
+    },
+    {
+      "id": "b_mw7hnhfzuy5j",
+      "kind": "meal",
+      "date": "2026-06-14",
+      "meal": "晚餐",
+      "title": "印度",
+      "currency": "JPY",
+      "amount": 3278,
+      "payer": "zq",
+      "method": "现金",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-08T07:05:57.263Z",
+      "createdBy": "",
+      "updatedAt": "2026-11-08T07:05:57.263Z"
     }
   ],
   "payments": [],
-  "updatedAt": "2026-11-08T07:05:26.096Z"
+  "updatedAt": "2026-11-08T07:05:57.807Z"
 }
