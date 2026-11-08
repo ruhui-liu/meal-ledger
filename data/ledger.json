@@ -45,7 +45,8 @@
       "id": "yf",
       "name": "张宇帆",
       "short": "YF",
-      "color": "#0b7285"
+      "color": "#0b7285",
+      "inactive": true
     },
     {
       "id": "m_mw3stf0yk8j3",
@@ -1190,5 +1191,5 @@
       "updatedAt": "2026-11-08T09:06:28.904Z"
     }
   ],
-  "updatedAt": "2026-11-08T09:06:29.441Z"
+  "updatedAt": "2026-11-08T09:07:16.077Z"
 }
