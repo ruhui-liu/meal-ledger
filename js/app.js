@@ -14,7 +14,7 @@ const FORM_VIEWS = new Set(['add', 'edit', 'pay']);
 const THEMES = [['material', 'Google 简约（默认）'], ['ios', 'iOS 原生'], ['mint', '清爽薄荷绿'], ['night', '深色金融'], ['play', '活泼圆润'], ['oneui', '三星 One UI'], ['warm', '暖橙（原版）']];
 
 const prefs = Object.assign(
-  { balMode: 'split', balAlgo: 'pair', balScope: 'all', statsRange: 'all', statsMode: 'split', statsFrom: '', statsTo: '', billType: 'all', billPerson: '', billRange: 'all', billFrom: '', billTo: '' },
+  { balMode: 'split', balAlgo: 'pair', balScope: 'all', statsRange: 'all', statsMode: 'split', statsFrom: '', statsTo: '', billType: 'all', billPerson: '', billRole: 'involved', billRange: 'all', billFrom: '', billTo: '' },
   readLS('fz.prefs', {}),
 );
 const setPref = (k, v) => { prefs[k] = v; writeLS('fz.prefs', prefs); };
@@ -631,6 +631,7 @@ function renderBills() {
       ${prefs.billRange === 'custom' ? `<div class="controls-row"><input type="date" name="billFrom" data-pref value="${esc(prefs.billFrom)}"> ${t('至')} <input type="date" name="billTo" data-pref value="${esc(prefs.billTo)}"></div>` : ''}
       <div class="chips scroll">${[['', t('所有人')], ...d.members.map((m) => [m.id, `${av(m.id, 'xs')}${nm(m.id)}`])]
         .map(([v, l]) => `<label class="chip"><input type="radio" name="billPerson" value="${v}" data-pref ${prefs.billPerson === v ? 'checked' : ''}><span>${l}</span></label>`).join('')}</div>
+      ${prefs.billPerson && d.members.some((m) => m.id === prefs.billPerson) ? `<div class="controls-row"><span class="muted small">${t('{name}：', { name: nm(prefs.billPerson) })}</span>${seg('billRole', [['involved', t('参与的')], ['payer', t('TA 付的')]], prefs.billRole === 'payer' ? 'payer' : 'involved', { pref: true, cls: 'sm' })}</div>` : ''}
     </div>
     <div id="billSummary"></div>
     <div id="billList"></div>`;
@@ -646,7 +647,8 @@ function renderBillList() {
   let items = [];
   if (prefs.billType !== 'pay') items.push(...d.bills.map((b) => ({ k: 'bill', v: b })));
   if (prefs.billType !== 'meal') items.push(...d.payments.map((x) => ({ k: 'pay', v: x })));
-  if (p) items = items.filter(({ k, v }) => (k === 'bill' ? v.payer === p || v.split.members.includes(p) : v.from === p || v.to === p));
+  if (p && prefs.billRole === 'payer') items = items.filter(({ k, v }) => (k === 'bill' ? v.payer === p : v.from === p));
+  else if (p) items = items.filter(({ k, v }) => (k === 'bill' ? v.payer === p || v.split.members.includes(p) : v.from === p || v.to === p));
   const rg = rangeOf(prefs.billRange, prefs.billFrom, prefs.billTo);
   if (rg.from) items = items.filter(({ v }) => v.date >= rg.from);
   if (rg.to) items = items.filter(({ v }) => v.date <= rg.to);
