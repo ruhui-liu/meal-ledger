@@ -1204,7 +1204,7 @@ function renderPayForm(editId, params = {}) {
         <div class="hint" id="owedHint"></div>
       </div>
       <div class="field"><span class="lbl">${t('支付方式')}</span>${methodChips(methods, f.method)}</div>
-      <div class="field"><span class="lbl">${t('抵扣哪种欠款')}</span><div id="creditBox"></div><div class="hint" id="creditHint"></div></div>
+      <div class="field"><span class="lbl">${t('优先抵扣')}</span><div id="creditBox"></div><div class="hint" id="creditHint"></div></div>
       <div class="field"><span class="lbl">${t('汇率（按还款日的银联汇率）')}</span><div class="rate-box" id="rateBox"></div></div>
       <label class="field"><span class="lbl">${t('备注')}</span><textarea name="note" rows="2" placeholder="${t('可选')}">${esc(f.note || '')}</textarea></label>
       <div class="form-actions"><button type="submit" class="btn primary block" ${S.canWrite() ? '' : 'disabled'}>${t('保存')}</button>
@@ -1233,16 +1233,27 @@ function renderPayForm(editId, params = {}) {
     $('#unit').textContent = unit(f.currency);
     const amt = parseNum(f.amount);
     const ch = $('#creditHint');
-    if (f.credit === 'other' && amt > 0) {
-      const v = C.convert(amt, f.currency, otherCur(), formRate(f));
-      ch.innerHTML = t('按还款日汇率，相当于抵扣 {amt} 的{cur}欠款', { amt: money(v, otherCur()), cur: curName(otherCur()) });
-    } else ch.innerHTML = f.credit === 'other' ? t('比如：欠的是日元，用微信/支付宝还人民币') : '';
-    // 当前欠款提示
+    const ok = f.from && f.to && f.from !== f.to;
+    // 保存后的结果预览：按「先欠先还、按当初汇率」实际算一遍
+    if (ok && amt > 0) {
+      const temp = { ...D(), payments: [...D().payments.filter((x) => x.id !== editId), { id: '__preview', date: f.date || today(), from: f.from, to: f.to, currency: f.currency, amount: amt, ...rateFields(f), ...(f.credit === 'other' ? { creditCurrency: otherCur() } : {}) }] };
+      const after = C.pairBalance(temp, f.from, f.to, 'split');
+      const owe = {}, back = {};
+      for (const [c, v] of Object.entries(after)) { if (isZero(v, c)) continue; (v > 0 ? owe : back)[c] = Math.abs(v); }
+      ch.innerHTML = Object.keys(owe).length || Object.keys(back).length
+        ? [Object.keys(owe).length ? t('保存后：{a} 还欠 {b} {amt}', { a: nm(f.from), b: nm(f.to), amt: amts(owe) }) : '', Object.keys(back).length ? t('保存后：{b} 反过来欠 {a} {amt}（多付了）', { a: nm(f.from), b: nm(f.to), amt: amts(back) }) : ''].filter(Boolean).join('<br>')
+        : `<span class="pos">${t('保存后：两人之间就结清了')}</span>`;
+    } else ch.innerHTML = t('付的币种和欠的不一样也没关系：会按那笔欠款当初的汇率自动折算抵扣。');
+    // 当前欠款提示（含按当初汇率换算成付款币种的合计，照这个数付就能正好还清）
     const oh = $('#owedHint');
-    if (f.from && f.to && f.from !== f.to) {
+    if (ok) {
       const debts = C.debtsPairwise(D(), 'split').filter((x) => (x.from === f.from && x.to === f.to));
       const o = {}; debts.forEach((x) => (o[x.cur] = x.amt));
-      oh.innerHTML = debts.length ? t('目前 {a} 欠 {b}：{amt}', { a: nm(f.from), b: nm(f.to), amt: amts(o) }) : t('目前 {a} 不欠 {b} 钱', { a: nm(f.from), b: nm(f.to) });
+      const conv = C.pairBalance(D(), f.from, f.to, f.currency)[f.currency];
+      const mixed = debts.some((x) => x.cur !== f.currency);
+      oh.innerHTML = debts.length
+        ? t('目前 {a} 欠 {b}：{amt}', { a: nm(f.from), b: nm(f.to), amt: amts(o) }) + (mixed && conv > 0 ? ' ' + t('（按当初汇率合计 {amt}）', { amt: money(conv, f.currency) }) : '')
+        : t('目前 {a} 不欠 {b} 钱', { a: nm(f.from), b: nm(f.to) });
     } else oh.innerHTML = f.from && f.from === f.to ? `<span class="err">${t('付款人和收款人不能是同一个人')}</span>` : '';
   }
   function renderRate() { $('#rateBox').innerHTML = rateBoxHtml(f, rateEditing); }

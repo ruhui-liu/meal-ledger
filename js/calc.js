@@ -174,53 +174,71 @@ export function valueIn(f, mode) {
 }
 
 /**
- * 换算模式下的两两净额：同币种内先「先欠先还」互相抵消，
- * 只有还没抵掉的部分，才按它自己那笔的汇率换算。
- * 这样同币种已经还清的账，换算后也是 0，不会因为借和还的日子汇率不同而多出零头。
+ * 两两之间的「欠款批次」：按时间顺序处理每一笔，先欠先还。
+ * - 账单：只和同币种、反方向的欠款批次抵消，抵不完的部分记成一个新批次（带它自己的汇率）。
+ * - 还款：先抵同币种（选了「换算后抵另一种」就先抵那一种），再自动抵另一种币种的欠款；
+ *   跨币种时按「那笔欠款当初的汇率」折算，所以按换算后的金额付款就能正好还清。
+ *   都抵完还有多的，才记成反方向的新批次。
+ * 分币种视图和换算视图都从这里算，结果一致；换算时只有还没还的部分按当初的汇率换算。
  */
+const OTHER = { JPY: 'CNY', CNY: 'JPY' };
 function pairLots(data) {
-  const m = new Map(); // "a|b|cur" -> { a, b, cur, lots: [{ sign, amt, rate }] }
+  const m = new Map(); // "a|b" -> { a, b, lots: { JPY: [{ sign, amt, rate }], CNY: [...] } }
   const fl = flows(data).map((f, i) => ({ ...f, i }))
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? -1 : 1) : x.type !== y.type ? (x.type === 'bill' ? -1 : 1) : x.i - y.i));
   for (const f of fl) {
     const [a, b] = f.from < f.to ? [f.from, f.to] : [f.to, f.from];
     const sign = f.from === a ? 1 : -1;
-    const key = `${a}|${b}|${f.cur}`;
-    if (!m.has(key)) m.set(key, { a, b, cur: f.cur, lots: [] });
-    const lots = m.get(key).lots;
-    let left = f.amt;
-    while (left > 1e-9 && lots.length && lots[0].sign !== sign) {
-      const take = Math.min(left, lots[0].amt);
-      lots[0].amt -= take;
-      left -= take;
-      if (lots[0].amt <= 1e-9) lots.shift();
+    const key = a + '|' + b;
+    if (!m.has(key)) m.set(key, { a, b, lots: { JPY: [], CNY: [] } });
+    const L = m.get(key).lots;
+    if (f.type === 'bill') {
+      let left = f.amt;
+      const lots = L[f.cur];
+      while (left > 1e-9 && lots.length && lots[0].sign !== sign) {
+        const take = Math.min(left, lots[0].amt);
+        lots[0].amt -= take; left -= take;
+        if (lots[0].amt <= 1e-7) lots.shift();
+      }
+      if (left > 1e-9) lots.push({ sign, amt: left, rate: f.rate });
+      continue;
     }
-    if (left > 1e-9) lots.push({ sign, amt: left, rate: f.rate });
+    // 还款：以付款币种 P 的金额去抵
+    const p = f.ref, P = p.currency;
+    const first = p.creditCurrency && p.creditCurrency !== P ? p.creditCurrency : P;
+    let left = +p.amount || 0;
+    for (const cur of [first, OTHER[first]]) {
+      const lots = L[cur];
+      while (left > 1e-9 && lots.length && lots[0].sign !== sign) {
+        const lot = lots[0];
+        const lotInP = convert(lot.amt, cur, P, lot.rate); // 这笔欠款按它当初的汇率值多少
+        const take = Math.min(left, lotInP);
+        lot.amt -= cur === P ? take : convert(take, P, cur, lot.rate);
+        left -= take;
+        if (lot.amt <= 1e-7 || take >= lotInP - 1e-9) lots.shift();
+      }
+    }
+    if (left > 1e-9) {
+      const cur = first;
+      L[cur].push({ sign, amt: cur === P ? left : convert(left, P, cur, f.rate), rate: f.rate });
+    }
   }
   return m;
 }
 
 function pairNet(data, mode) {
   const m = new Map();
-  if (mode !== 'split') {
-    for (const e of pairLots(data).values()) {
-      const k = e.a + '|' + e.b;
-      if (!m.has(k)) m.set(k, { a: e.a, b: e.b, net: {} });
-      // 原币种里已经算结清（只剩不到 1 円 / 0.01 元的尾数）就当作 0，避免换算后冒出零头
-      if (isZero(e.lots.reduce((s, l) => s + l.sign * l.amt, 0), e.cur)) continue;
-      const v = e.lots.reduce((s, l) => s + l.sign * convert(l.amt, e.cur, mode, l.rate), 0);
-      m.get(k).net[mode] = (m.get(k).net[mode] || 0) + v;
+  for (const e of pairLots(data).values()) {
+    const net = {};
+    for (const cur of CURS) {
+      const lots = e.lots[cur];
+      const raw = lots.reduce((s, l) => s + l.sign * l.amt, 0);
+      // 原币种里已经算结清（只剩不到 1 円 / 0.01 元的尾数）就当作 0
+      if (isZero(raw, cur)) continue;
+      if (mode === 'split') net[cur] = (net[cur] || 0) + raw;
+      else net[mode] = (net[mode] || 0) + lots.reduce((s, l) => s + l.sign * convert(l.amt, cur, mode, l.rate), 0);
     }
-    return m;
-  }
-  for (const f of flows(data)) {
-    const [a, b] = f.from < f.to ? [f.from, f.to] : [f.to, f.from];
-    const sign = f.from === a ? 1 : -1;
-    const { cur, amt } = valueIn(f, mode);
-    const k = a + '|' + b;
-    if (!m.has(k)) m.set(k, { a, b, net: {} });
-    const e = m.get(k);
-    e.net[cur] = (e.net[cur] || 0) + sign * amt;
+    m.set(e.a + '|' + e.b, { a: e.a, b: e.b, net });
   }
   return m;
 }
@@ -253,16 +271,8 @@ export function netByMember(data, mode) {
     net[id] = net[id] || {};
     net[id][cur] = (net[id][cur] || 0) + v;
   };
-  if (mode !== 'split') {
-    for (const e of pairNet(data, mode).values()) {
-      for (const [cur, v] of Object.entries(e.net)) { add(e.b, cur, v); add(e.a, cur, -v); }
-    }
-    return net;
-  }
-  for (const f of flows(data)) {
-    const { cur, amt } = valueIn(f, mode);
-    add(f.to, cur, amt);
-    add(f.from, cur, -amt);
+  for (const e of pairNet(data, mode).values()) {
+    for (const [cur, v] of Object.entries(e.net)) { add(e.b, cur, v); add(e.a, cur, -v); }
   }
   return net;
 }
