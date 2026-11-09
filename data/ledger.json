@@ -1267,7 +1267,21 @@
       "createdAt": "2026-11-09T04:11:40.575Z",
       "createdBy": "zq",
       "updatedAt": "2026-11-09T04:11:40.575Z"
+    },
+    {
+      "id": "p_mw8qx7ciy6w7",
+      "date": "2026-11-09",
+      "from": "zq",
+      "to": "rh",
+      "currency": "CNY",
+      "amount": 991.55,
+      "method": "微信支付",
+      "note": "",
+      "createdAt": "2026-11-09T04:13:13.458Z",
+      "createdBy": "rh",
+      "updatedAt": "2026-11-09T04:13:13.458Z",
+      "creditCurrency": "JPY"
     }
   ],
-  "updatedAt": "2026-11-09T04:11:41.627Z"
+  "updatedAt": "2026-11-09T04:13:14.098Z"
 }
