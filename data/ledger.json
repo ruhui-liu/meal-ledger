@@ -1202,7 +1202,20 @@
       "createdAt": "2026-11-08T11:48:45.525Z",
       "createdBy": "rh",
       "updatedAt": "2026-11-08T11:48:45.525Z"
+    },
+    {
+      "id": "p_mw8qs87co6n1",
+      "date": "2026-11-08",
+      "from": "m_mw3stf0yk8j3",
+      "to": "zq",
+      "currency": "CNY",
+      "amount": 307.84,
+      "method": "微信支付",
+      "note": "",
+      "createdAt": "2026-11-09T04:09:21.287Z",
+      "createdBy": "zq",
+      "updatedAt": "2026-11-09T04:09:21.287Z"
     }
   ],
-  "updatedAt": "2026-11-08T11:48:46.803Z"
+  "updatedAt": "2026-11-09T04:09:21.937Z"
 }
