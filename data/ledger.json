@@ -1262,11 +1262,11 @@
       "to": "zq",
       "currency": "CNY",
       "amount": 521.18,
-      "method": "",
+      "method": "微信支付",
       "note": "",
       "createdAt": "2026-11-09T04:11:40.575Z",
       "createdBy": "zq",
-      "updatedAt": "2026-11-09T04:11:40.575Z"
+      "updatedAt": "2026-11-09T04:15:17.066Z"
     },
     {
       "id": "p_mw8qx7ciy6w7",
@@ -1283,5 +1283,5 @@
       "creditCurrency": "JPY"
     }
   ],
-  "updatedAt": "2026-11-09T04:13:14.098Z"
+  "updatedAt": "2026-11-09T04:15:17.948Z"
 }
