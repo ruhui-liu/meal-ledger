@@ -1174,6 +1174,35 @@
       "createdAt": "2026-11-08T07:42:12.285Z",
       "createdBy": "zq",
       "updatedAt": "2026-11-08T07:42:12.285Z"
+    },
+    {
+      "id": "b_mw8v39xkux7z",
+      "kind": "meal",
+      "date": "2026-11-09",
+      "meal": "午餐",
+      "title": "食堂",
+      "currency": "JPY",
+      "amount": 682,
+      "payer": "rh",
+      "method": "其他",
+      "split": {
+        "mode": "amount",
+        "members": [
+          "rh",
+          "zq"
+        ],
+        "values": {
+          "rh": 583,
+          "zq": 99
+        }
+      },
+      "note": "",
+      "createdAt": "2026-11-09T06:09:55.206Z",
+      "createdBy": "rh",
+      "updatedAt": "2026-11-09T06:09:55.206Z",
+      "photos": [
+        "media/receipts/mw8v39xlkp25c.jpg"
+      ]
     }
   ],
   "payments": [
@@ -1257,5 +1286,5 @@
       "creditCurrency": "JPY"
     }
   ],
-  "updatedAt": "2026-11-09T04:18:15.966Z"
+  "updatedAt": "2026-11-09T06:09:58.406Z"
 }
