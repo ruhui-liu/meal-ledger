@@ -116,8 +116,8 @@ const EN = {
   '只看我': 'Only me',
   '每个人的净额': 'Net balance per person',
   '日元和人民币分开计算，互不抵消。': 'JPY and CNY are calculated separately and never offset each other.',
-  '所有金额按<b>每笔账消费当天的汇率</b>（银联当日汇率）换算成{cur}后再汇总。':
-    'Every record is converted to {cur} at <b>the exchange rate on its own date</b> (UnionPay daily rate) before adding up.',
+  '所有金额按<b>每笔账消费当天的汇率</b>（银联当日汇率）换算成{cur}后再汇总；同币种已经还掉的部分先抵消，不会多出汇率差。':
+    'Every record is converted to {cur} at <b>the exchange rate on its own date</b> (UnionPay daily rate); repayments first cancel debts in the same currency, so settled amounts leave no exchange-rate leftovers.',
   '「最少转账」只看每个人的净额重新配对，转账次数最少，但收款人可能不是当初付钱的人。':
     '“Fewest transfers” re-pairs people by net balance to minimise the number of transfers, so you may pay someone other than the person who originally paid.',
   '「两两抵消」：两个人之间互相欠的钱先抵消，只剩一个方向。': '“Pairwise”: what two people owe each other is offset first, leaving one direction.',
@@ -368,6 +368,7 @@ const EN = {
   "有小票": "receipt",
   "小票照片": "Receipts",
   "拍照": "Camera",
+  "合计时同币种的欠款和还款先互相抵消，只有还没还的部分按当初的汇率换算，所以合计不一定等于下面各笔相加。": "For the total, debts and repayments in the same currency cancel out first; only the unpaid part is converted at its original rate, so the total may differ from the sum of the rows below",
   "外观": "Appearance",
   "跟随系统": "System",
   "浅色": "Light",

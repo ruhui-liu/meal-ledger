@@ -173,8 +173,46 @@ export function valueIn(f, mode) {
   return { cur: mode, amt: convert(f.amt, f.cur, mode, f.rate) };
 }
 
+/**
+ * 换算模式下的两两净额：同币种内先「先欠先还」互相抵消，
+ * 只有还没抵掉的部分，才按它自己那笔的汇率换算。
+ * 这样同币种已经还清的账，换算后也是 0，不会因为借和还的日子汇率不同而多出零头。
+ */
+function pairLots(data) {
+  const m = new Map(); // "a|b|cur" -> { a, b, cur, lots: [{ sign, amt, rate }] }
+  const fl = flows(data).map((f, i) => ({ ...f, i }))
+    .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? -1 : 1) : x.type !== y.type ? (x.type === 'bill' ? -1 : 1) : x.i - y.i));
+  for (const f of fl) {
+    const [a, b] = f.from < f.to ? [f.from, f.to] : [f.to, f.from];
+    const sign = f.from === a ? 1 : -1;
+    const key = `${a}|${b}|${f.cur}`;
+    if (!m.has(key)) m.set(key, { a, b, cur: f.cur, lots: [] });
+    const lots = m.get(key).lots;
+    let left = f.amt;
+    while (left > 1e-9 && lots.length && lots[0].sign !== sign) {
+      const take = Math.min(left, lots[0].amt);
+      lots[0].amt -= take;
+      left -= take;
+      if (lots[0].amt <= 1e-9) lots.shift();
+    }
+    if (left > 1e-9) lots.push({ sign, amt: left, rate: f.rate });
+  }
+  return m;
+}
+
 function pairNet(data, mode) {
   const m = new Map();
+  if (mode !== 'split') {
+    for (const e of pairLots(data).values()) {
+      const k = e.a + '|' + e.b;
+      if (!m.has(k)) m.set(k, { a: e.a, b: e.b, net: {} });
+      // 原币种里已经算结清（只剩不到 1 円 / 0.01 元的尾数）就当作 0，避免换算后冒出零头
+      if (isZero(e.lots.reduce((s, l) => s + l.sign * l.amt, 0), e.cur)) continue;
+      const v = e.lots.reduce((s, l) => s + l.sign * convert(l.amt, e.cur, mode, l.rate), 0);
+      m.get(k).net[mode] = (m.get(k).net[mode] || 0) + v;
+    }
+    return m;
+  }
   for (const f of flows(data)) {
     const [a, b] = f.from < f.to ? [f.from, f.to] : [f.to, f.from];
     const sign = f.from === a ? 1 : -1;
@@ -199,6 +237,15 @@ export function debtsPairwise(data, mode) {
   return list;
 }
 
+/** 两个人之间的净额 { cur: v }，正数 = a 欠 b */
+export function pairBalance(data, a, b, mode) {
+  const [x, y] = a < b ? [a, b] : [b, a];
+  const e = pairNet(data, mode).get(x + '|' + y);
+  if (!e) return {};
+  const s = a === x ? 1 : -1;
+  return Object.fromEntries(Object.entries(e.net).map(([c, v]) => [c, s * v]));
+}
+
 /** 每个人的净额：正数=别人欠他（应收），负数=他欠别人（应付） */
 export function netByMember(data, mode) {
   const net = {};
@@ -206,6 +253,12 @@ export function netByMember(data, mode) {
     net[id] = net[id] || {};
     net[id][cur] = (net[id][cur] || 0) + v;
   };
+  if (mode !== 'split') {
+    for (const e of pairNet(data, mode).values()) {
+      for (const [cur, v] of Object.entries(e.net)) { add(e.b, cur, v); add(e.a, cur, -v); }
+    }
+    return net;
+  }
   for (const f of flows(data)) {
     const { cur, amt } = valueIn(f, mode);
     add(f.to, cur, amt);

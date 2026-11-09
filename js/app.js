@@ -582,7 +582,7 @@ function renderBalances() {
     <section class="card"><h3>${t('每个人的净额')}</h3>${netRows}</section>
     <p class="foot">${mode === 'split'
       ? t('日元和人民币分开计算，互不抵消。')
-      : t('所有金额按<b>每笔账消费当天的汇率</b>（银联当日汇率）换算成{cur}后再汇总。', { cur: curName(mode) })}
+      : t('所有金额按<b>每笔账消费当天的汇率</b>（银联当日汇率）换算成{cur}后再汇总；同币种已经还掉的部分先抵消，不会多出汇率差。', { cur: curName(mode) })}
       ${t(algo === 'simple' ? '「最少转账」只看每个人的净额重新配对，转账次数最少，但收款人可能不是当初付钱的人。' : '「两两抵消」：两个人之间互相欠的钱先抵消，只剩一个方向。')}
       ${t('点一行可以看这两个人之间的明细。')}</p>`;
 }
@@ -590,8 +590,7 @@ function renderBalances() {
 function openPair(a, b) {
   const mode = prefs.balMode;
   const hist = C.pairHistory(D(), a, b, mode);
-  const tot = {};
-  hist.forEach((h) => (tot[h.vcur] = (tot[h.vcur] || 0) + h.sign * h.vamt));
+  const tot = C.pairBalance(D(), a, b, mode); // 换算模式：同币种先抵消，剩下的才按各自汇率换算
   const totHtml = Object.entries(tot).filter(([c, v]) => !isZero(v, c))
     .map(([c, v]) => `<div class="${v > 0 ? 'neg' : 'pos'}">${v > 0 ? t('{a} 欠 {b}', { a: nm(a), b: nm(b) }) : t('{a} 欠 {b}', { a: nm(b), b: nm(a) })} ${money(Math.abs(v), c)}</div>`).join('')
     || `<div class="muted">${t('两人之间已结清')}</div>`;
@@ -607,7 +606,7 @@ function openPair(a, b) {
   }).join('');
   openModal(`<h2 class="sheet-t">${av(a)} ${nm(a)} <span class="muted">${t('和')}</span> ${av(b)} ${nm(b)}</h2>
     <div class="pair-tot">${totHtml}</div>
-    <p class="muted small">${t('+ 表示 {a} 欠 {b} 的钱增加，− 表示减少', { a: nm(a), b: nm(b) })}${mode !== 'split' ? t('（已按各自日期汇率换算成{cur}）', { cur: curName(mode) }) : ''}${getLang() === 'en' ? '.' : '。'}</p>
+    <p class="muted small">${t('+ 表示 {a} 欠 {b} 的钱增加，− 表示减少', { a: nm(a), b: nm(b) })}${mode !== 'split' ? t('（已按各自日期汇率换算成{cur}）', { cur: curName(mode) }) + (getLang() === 'en' ? '. ' : '。') + t('合计时同币种的欠款和还款先互相抵消，只有还没还的部分按当初的汇率换算，所以合计不一定等于下面各笔相加。') : ''}${getLang() === 'en' ? '.' : '。'}</p>
     ${pairActions(a, b)}
     <div class="list">${items || `<p class="muted pad">${t('没有往来记录')}</p>`}</div>`);
 }
