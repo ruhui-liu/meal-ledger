@@ -1203,6 +1203,33 @@
       "photos": [
         "media/receipts/mw8v39xlkp25c.jpg"
       ]
+    },
+    {
+      "id": "b_mwbzd6g8qsem",
+      "kind": "meal",
+      "date": "2026-11-11",
+      "meal": "晚餐",
+      "title": "韩餐",
+      "currency": "JPY",
+      "amount": 26950,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq",
+          "b",
+          "m_mw3stf0yk8j3"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-11T10:32:54.245Z",
+      "createdBy": "rh",
+      "updatedAt": "2026-11-11T10:32:54.245Z",
+      "photos": [
+        "media/receipts/mwbzd6g8rxekp.jpg"
+      ]
     }
   ],
   "payments": [
@@ -1286,5 +1313,5 @@
       "creditCurrency": "JPY"
     }
   ],
-  "updatedAt": "2026-11-09T06:09:58.406Z"
+  "updatedAt": "2026-11-11T10:32:58.146Z"
 }
