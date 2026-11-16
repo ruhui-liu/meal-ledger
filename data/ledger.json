@@ -1257,6 +1257,44 @@
       "photos": [
         "media/receipts/mwhpol5x215oc.jpg"
       ]
+    },
+    {
+      "id": "b_mwj27pkl0rjz",
+      "kind": "meal",
+      "date": "2026-11-16",
+      "meal": "晚餐",
+      "title": "用心棒",
+      "currency": "JPY",
+      "amount": 3350,
+      "payer": "zq",
+      "payers": [
+        {
+          "id": "zq",
+          "amount": 1160
+        },
+        {
+          "id": "b",
+          "amount": 2190
+        }
+      ],
+      "method": "",
+      "split": {
+        "mode": "amount",
+        "members": [
+          "rh",
+          "zq",
+          "b"
+        ],
+        "values": {
+          "rh": 1050,
+          "zq": 1110,
+          "b": 1190
+        }
+      },
+      "note": "",
+      "createdAt": "2026-11-16T09:27:01.170Z",
+      "createdBy": "rh",
+      "updatedAt": "2026-11-16T09:27:01.170Z"
     }
   ],
   "payments": [
@@ -1340,5 +1378,5 @@
       "creditCurrency": "JPY"
     }
   ],
-  "updatedAt": "2026-11-15T10:48:30.368Z"
+  "updatedAt": "2026-11-16T09:27:03.473Z"
 }
