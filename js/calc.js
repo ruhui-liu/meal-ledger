@@ -71,10 +71,21 @@ export function sharesOf(bill) {
   return out;
 }
 
+/** 这笔账的付款人和各自付的金额：[{ id, amt }]。多人付款时用 bill.payers，否则就是 bill.payer 付了全部 */
+export function payersOf(b) {
+  if (Array.isArray(b.payers) && b.payers.length) return b.payers.map((x) => ({ id: x.id, amt: +x.amount || 0 }));
+  return b.payer ? [{ id: b.payer, amt: +b.amount || 0 }] : [];
+}
+
 export function billError(bill, nameOf = (id) => id) {
   if (!bill.date) return t('请选择日期');
   if (!(bill.amount > 0)) return t('请输入正确的金额');
   if (!bill.payer) return t('请选择付款人');
+  if (Array.isArray(bill.payers) && bill.payers.length) {
+    if (bill.payers.some((x) => !Number.isFinite(x.amount) || x.amount < 0)) return t('付款金额格式不对');
+    const sum = bill.payers.reduce((s, x) => s + x.amount, 0);
+    if (Math.abs(sum - bill.amount) > CUR[bill.currency].eps) return t('各付款人金额合计 {sum}，和总额 {amt} 不一致', { sum: +sum.toFixed(2), amt: bill.amount });
+  }
   const sp = bill.split;
   if (!sp.members.length) return t('请至少选一位参与人');
   if (sp.mode === 'items') {
@@ -146,8 +157,15 @@ export function flows(data) {
     const rate = R(b);
     const sh = sharesOf(b);
     for (const [id, v] of Object.entries(sh)) {
-      if (id === b.payer || !(Math.abs(v) > 1e-9)) continue;
-      out.push({ type: 'bill', ref: b, date: b.date, from: id, to: b.payer, cur: b.currency, amt: v, rate });
+      if (!(Math.abs(v) > 1e-9)) continue;
+      // 多人付款：每个人的份额按各付款人付的比例欠给他们
+      const P = payersOf(b);
+      const tot = P.reduce((s, x) => s + x.amt, 0) || 1;
+      for (const q of P) {
+        if (q.id === id) continue;
+        const x = (v * q.amt) / tot;
+        if (Math.abs(x) > 1e-9) out.push({ type: 'bill', ref: b, date: b.date, from: id, to: q.id, cur: b.currency, amt: x, rate });
+      }
     }
   }
   for (const p of data.payments) {
@@ -336,9 +354,11 @@ export function stats(data, range = {}) {
     const rate = R(b);
     total.count++;
     addTo(total.amt, b.currency, b.amount, rate);
-    const p = P(b.payer);
-    p.paidCount++;
-    addTo(p.paid, b.currency, b.amount, rate);
+    for (const q of payersOf(b)) {
+      const p = P(q.id);
+      p.paidCount++;
+      addTo(p.paid, b.currency, q.amt, rate);
+    }
     for (const [id, v] of Object.entries(sharesOf(b))) {
       const q = P(id);
       q.joinCount++;

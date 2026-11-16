@@ -599,7 +599,7 @@ function openPair(a, b) {
     const title = h.type === 'bill'
       ? `${r.kind === 'carry' ? `<span class="tag carry">${t('结转')}</span>` : r.meal ? `<span class="tag">${tm(r.meal)}</span>` : ''}${titleOf(r)}`
       : `<span class="tag pay">${t('还款')}</span>${nm(r.from)} → ${nm(r.to)}`;
-    const sub = h.type === 'bill' ? t('{payer} 付 · {who} 的份额', { payer: nmShort(r.payer), who: nmShort(h.from) }) : `${moneyText(r.amount, r.currency)}${r.method ? ' · ' + tm(r.method) : ''}`;
+    const sub = h.type === 'bill' ? t('{payer} 付 · {who} 的份额', { payer: C.payersOf(r).map((q) => nmShort(q.id)).join('、'), who: nmShort(h.from) }) : `${moneyText(r.amount, r.currency)}${r.method ? ' · ' + tm(r.method) : ''}`;
     return `<div class="item" data-act="${h.type === 'bill' ? 'openBill' : 'openPay'}" data-arg="${r.id}" role="button" tabindex="0">
       <div class="item-m"><div class="item-t">${title}</div><div class="item-s">${fmtDate(h.date)} · ${sub}</div></div>
       <div class="item-r ${h.sign > 0 ? 'neg' : 'pos'}"><span class="nowrap">${h.sign > 0 ? '+' : '−'}${money(h.vamt, h.vcur)}</span></div></div>`;
@@ -651,14 +651,15 @@ function renderBillList() {
   let items = [];
   if (prefs.billType !== 'pay') items.push(...d.bills.map((b) => ({ k: 'bill', v: b })));
   if (prefs.billType !== 'meal') items.push(...d.payments.map((x) => ({ k: 'pay', v: x })));
-  if (p && prefs.billRole === 'payer') items = items.filter(({ k, v }) => (k === 'bill' ? v.payer === p : v.from === p));
-  else if (p) items = items.filter(({ k, v }) => (k === 'bill' ? v.payer === p || v.split.members.includes(p) : v.from === p || v.to === p));
+  const paidBy = (b, id) => C.payersOf(b).some((q) => q.id === id);
+  if (p && prefs.billRole === 'payer') items = items.filter(({ k, v }) => (k === 'bill' ? paidBy(v, p) : v.from === p));
+  else if (p) items = items.filter(({ k, v }) => (k === 'bill' ? paidBy(v, p) || v.split.members.includes(p) : v.from === p || v.to === p));
   const rg = rangeOf(prefs.billRange, prefs.billFrom, prefs.billTo);
   if (rg.from) items = items.filter(({ v }) => v.date >= rg.from);
   if (rg.to) items = items.filter(({ v }) => v.date <= rg.to);
   if (q) {
     items = items.filter(({ k, v }) => {
-      const names = (k === 'bill' ? [v.payer, ...v.split.members] : [v.from, v.to]).map((id) => `${mem(id).name} ${mem(id).short}`).join(' ');
+      const names = (k === 'bill' ? [...C.payersOf(v).map((q) => q.id), ...v.split.members] : [v.from, v.to]).map((id) => `${mem(id).name} ${mem(id).short}`).join(' ');
       return `${v.title || ''} ${v.note || ''} ${v.method || ''} ${t(v.method || '')} ${v.meal || ''} ${t(v.meal || '')} ${names} ${v.date}`.toLowerCase().includes(q);
     });
   }
@@ -689,7 +690,7 @@ function billRow(b) {
   const carry = b.kind === 'carry';
   const tag = carry ? `<span class="tag carry">${t('结转')}</span>` : b.meal ? `<span class="tag">${tm(b.meal)}</span>` : '';
   const n = b.split.members.length;
-  const sub = carry ? t('{n} 人欠 {name}', { n, name: nmShort(b.payer) }) : `${t('{payer} 付', { payer: nmShort(b.payer) })}${b.method ? ' · ' + tm(b.method) : ''} · ${t('{n} 人', { n })}${b.photos?.length ? ' · ' + t('有小票') : ''}`;
+  const sub = carry ? t('{n} 人欠 {name}', { n, name: nmShort(b.payer) }) : `${t('{payer} 付', { payer: C.payersOf(b).map((q) => nmShort(q.id)).join('、') })}${b.method ? ' · ' + tm(b.method) : ''} · ${t('{n} 人', { n })}${b.photos?.length ? ' · ' + t('有小票') : ''}`;
   return `<div class="item" data-act="openBill" data-arg="${b.id}" role="button" tabindex="0">
     <div class="item-d wd-${dow(b.date)}"><b>${fmtDateShort(b.date)}</b><small>${weekday(b.date)}</small></div>
     <div class="item-m"><div class="item-t">${tag}${titleOf(b)}</div>
@@ -719,10 +720,11 @@ function openBill(id) {
   const rows = b.split.members.map((mid) => {
     const v = sh[mid];
     const raw = b.split.mode !== 'equal' ? `<small class="muted">${t(b.split.mode === 'ratio' ? '比例 ' : '指定 ')}${esc(String(b.split.values?.[mid] ?? 0))}</small>` : '';
-    return `<div class="share-row">${av(mid)}<span class="nm"><span>${nm(mid)}${mid === b.payer ? `<small class="tag">${t('付款人')}</small>` : ''}</span>${raw}</span>
+    return `<div class="share-row">${av(mid)}<span class="nm"><span>${nm(mid)}${C.payersOf(b).some((q) => q.id === mid) ? `<small class="tag">${t('付款人')}</small>` : ''}</span>${raw}</span>
       <span class="share-v">${money(v, b.currency)}<small class="muted">≈ ${moneyText(C.convert(v, b.currency, other, rate), other)}</small></span></div>`;
   }).join('');
-  const payerIn = b.split.members.includes(b.payer);
+  const bp = C.payersOf(b);
+  const payerIn = bp.some((q) => b.split.members.includes(q.id));
   const creator = b.createdBy ? mem(b.createdBy).name : '';
   openModal(`
     <div class="bill-head">
@@ -731,7 +733,7 @@ function openBill(id) {
       <div class="bill-amt">${money(b.amount, b.currency)}<small class="muted">≈ ${moneyText(C.convert(b.amount, b.currency, other, rate), other)}</small></div>
     </div>
     <dl class="kv">
-      <dt>${t('付款人')}</dt><dd>${av(b.payer, 'xs')} ${nm(b.payer)}</dd>
+      <dt>${t('付款人')}</dt><dd>${bp.map((q) => `<span class="nowrap">${av(q.id, 'xs')} ${nm(q.id)}${bp.length > 1 ? ' ' + money(q.amt, b.currency) : ''}</span>`).join(' ')}</dd>
       <dt>${t('支付方式')}</dt><dd>${b.method ? tm(b.method) : t('未记录')}</dd>
       <dt>${t('分账方式')}</dt><dd>${modeTxt}${b.split.mode === 'amount' ? t('（没指定完的部分平均分）') : ''}</dd>
       <dt>${t('汇率')}</dt><dd>${rateDesc(b)}</dd>
@@ -834,6 +836,13 @@ function renderBillForm(editId, params = {}) {
   if (restored) Object.assign(f, clone(draft.f));
   f.split.items = f.split.items || [];
   let membersTouched = restored;
+  // 多人付款：表单里用 multiPay / payerIds / payerAmt，保存时再变成 bill.payers
+  if (f.multiPay === undefined) {
+    f.multiPay = Array.isArray(f.payers) && f.payers.length > 1;
+    f.payerIds = f.multiPay ? f.payers.map((x) => x.id) : f.payer ? [f.payer] : [];
+    f.payerAmt = Object.fromEntries((f.payers || []).map((x) => [x.id, String(+(+x.amount).toFixed(2))]));
+  }
+  delete f.payers;
   const shownIds = [...new Set([...active, ...f.split.members, f.payer].filter(Boolean))];
   const titles = [...new Set(d.bills.filter((b) => b.kind !== 'carry').sort((a, b) => (a.date < b.date ? 1 : -1)).map((b) => b.title).filter(Boolean))].slice(0, 40);
   const methods = [...new Set([...d.methods, f.method].filter(Boolean))];
@@ -858,7 +867,8 @@ function renderBillForm(editId, params = {}) {
           <div class="amount-wrap"><input name="amount" class="amount-input" inputmode="decimal" value="${esc(f.amount)}" placeholder="0"><span class="unit" id="unit">${unit(f.currency)}</span></div></div>
         <div class="hint" id="amountHint"></div>
       </div>
-      <div class="field"><span class="lbl">${t('谁付的钱')}</span><div id="payerBox">${withAdd(chips('payer', memberOpts(shownIds), f.payer), 'payer')}</div></div>
+      <div class="field"><div class="lbl-row"><span class="lbl">${t('谁付的钱')}</span><button type="button" class="link" data-f="multiPay" id="multiBtn">${t(f.multiPay ? '只有一个人付' : '多人一起付')}</button></div>
+        <div id="payerBox"></div></div>
       <div class="field"><span class="lbl">${t('支付方式')}</span>${methodChips(methods, f.method)}</div>
       <div class="field"><div class="lbl-row"><span class="lbl">${t(f.kind === 'carry' ? '欠款人' : '谁一起吃')} <b id="pc"></b></span>
         <span><button type="button" class="link" data-f="all">${t('全选')}</button><button type="button" class="link" data-f="none">${t('清空')}</button></span></div>
@@ -885,7 +895,11 @@ function renderBillForm(editId, params = {}) {
     f.title = (fd.get('title') || '').trim();
     f.currency = fd.get('currency') || 'JPY';
     f.amount = fd.get('amount') || '';
-    f.payer = fd.get('payer') || '';
+    if (f.multiPay) {
+      f.payerIds = fd.getAll('payers');
+      f.payer = f.payerIds[0] || '';
+      form.querySelectorAll('[data-pa]').forEach((i) => (f.payerAmt[i.dataset.pa] = i.value));
+    } else f.payer = fd.get('payer') || '';
     f.method = fd.get('method') || '';
     f.split.members = fd.getAll('members');
     f.split.mode = fd.get('splitMode') || 'equal';
@@ -898,13 +912,54 @@ function renderBillForm(editId, params = {}) {
     const items = f.split.items
       .filter((it) => it.name.trim() || String(it.price).trim())
       .map((it) => ({ name: it.name.trim(), price: String(it.price).trim() === '' ? NaN : parseNum(it.price), members: it.members.filter((id) => f.split.members.includes(id)) }));
+    let payers = null;
+    if (f.multiPay && f.payerIds.length > 1) {
+      const total = parseNum(f.amount);
+      const vals = f.payerIds.map((id) => (String(f.payerAmt[id] ?? '').trim() === '' ? null : parseNum(f.payerAmt[id])));
+      const empty = vals.filter((v) => v === null).length;
+      const filled = vals.reduce((a, v) => a + (v ?? 0), 0);
+      payers = f.payerIds.map((id, i) => ({ id, amount: vals[i] !== null ? vals[i] : empty ? (total - filled) / empty : 0 }));
+    }
     return {
       id: f.id, kind: f.kind || 'meal', date: f.date, meal: f.meal, title: f.title, currency: f.currency, amount: parseNum(f.amount),
-      payer: f.payer, method: f.method,
+      payer: f.payer, ...(payers ? { payers } : {}), method: f.method,
       split: { mode: f.split.mode, members: [...f.split.members], ...(f.split.mode === 'amount' || f.split.mode === 'ratio' ? { values } : {}), ...(f.split.mode === 'items' ? { items } : {}) },
       ...rateFields(f), note: f.note,
       createdAt: f.createdAt, createdBy: f.createdBy,
     };
+  }
+  function renderPayerBox() {
+    $('#multiBtn').textContent = t(f.multiPay ? '只有一个人付' : '多人一起付');
+    $('#payerBox').innerHTML = f.multiPay
+      ? withAdd(chips('payers', memberOpts(shownIds), f.payerIds, { type: 'checkbox' }), 'payer') + '<div id="payerAmts" class="split-rows payer-amts"></div><div class="hint" id="payerHint"></div>'
+      : withAdd(chips('payer', memberOpts(shownIds), f.payer), 'payer');
+    renderPayerAmts();
+  }
+  function renderPayerAmts() {
+    const box = $('#payerAmts');
+    if (!box) return;
+    box.innerHTML = f.payerIds.length > 1 ? f.payerIds.map((id) => `<div class="split-row">${av(id)}<span class="nm">${t('{name} 付了', { name: nm(id) })}</span>
+      <input data-pa="${id}" inputmode="decimal" value="${esc(f.payerAmt[id] ?? '')}" aria-label="${nm(id)}"></div>`).join('') : '';
+    updatePayerHint();
+  }
+  function updatePayerHint() {
+    const el = $('#payerHint');
+    if (!el) return;
+    const bill = buildBill(), cur = bill.currency;
+    if (!f.multiPay) { el.innerHTML = ''; return; }
+    if (f.payerIds.length < 2) { el.innerHTML = t('选两个或更多付款人，再填各自付了多少'); return; }
+    const vals = f.payerIds.map((id) => String(f.payerAmt[id] ?? '').trim());
+    const auto = (bill.payers || []).filter((x, i) => vals[i] === '');
+    form.querySelectorAll('[data-pa]').forEach((i) => {
+      const q = (bill.payers || []).find((x) => x.id === i.dataset.pa);
+      i.placeholder = q && Number.isFinite(q.amount) ? num(q.amount, cur) : '0';
+    });
+    if (!(bill.amount > 0)) { el.innerHTML = t('先填总金额'); return; }
+    const sum = (bill.payers || []).reduce((a, x) => a + (Number.isFinite(x.amount) ? x.amount : 0), 0);
+    const diff = bill.amount - sum;
+    el.innerHTML = Math.abs(diff) > CUR[cur].eps
+      ? `<span class="err">${t('各付款人金额合计 {sum}，和总额差 {diff}', { sum: moneyText(sum, cur), diff: moneyText(diff, cur) })}</span>`
+      : auto.length ? t('没填的部分自动算：{v}', { v: auto.map((x) => `${mem(x.id).name} ${moneyText(x.amount, cur)}`).join('、') }) : t('金额正好对上');
   }
   function renderSplitRows() {
     const mode = f.split.mode;
@@ -932,9 +987,10 @@ function renderBillForm(editId, params = {}) {
     const sh = okAmt ? C.sharesOf(bill) : {};
     form.querySelectorAll('[data-share]').forEach((el) => {
       const v = sh[el.dataset.share];
-      el.innerHTML = Number.isFinite(v) ? `${el.dataset.share === bill.payer ? `<small class="muted">${t('自己 ')}</small>` : ''}${money(v, cur)}` : '<span class="muted">—</span>';
+      el.innerHTML = Number.isFinite(v) ? `${C.payersOf(bill).some((q) => q.id === el.dataset.share) ? `<small class="muted">${t('自己 ')}</small>` : ''}${money(v, cur)}` : '<span class="muted">—</span>';
     });
     $('#unit').textContent = unit(cur);
+    updatePayerHint();
     const other = cur === 'JPY' ? 'CNY' : 'JPY';
     const ah = $('#amountHint');
     if (String(f.amount).trim() && !okAmt) ah.innerHTML = `<span class="err">${t('金额格式不对')}</span>`;
@@ -1018,9 +1074,9 @@ function renderBillForm(editId, params = {}) {
   function addMemberHere(where) {
     editMember(null, (m) => {
       shownIds.push(m.id);
-      if (where === 'payer') f.payer = m.id;
+      if (where === 'payer') { if (f.multiPay) f.payerIds.push(m.id); else f.payer = m.id; }
       if (!f.split.members.includes(m.id)) f.split.members.push(m.id);
-      $('#payerBox').innerHTML = withAdd(chips('payer', memberOpts(shownIds), f.payer), 'payer');
+      renderPayerBox();
       $('#membersBox').innerHTML = withAdd(chips('members', memberOpts(shownIds), f.split.members, { type: 'checkbox' }), 'members');
       onInput({ target: form });
     });
@@ -1049,6 +1105,7 @@ function renderBillForm(editId, params = {}) {
       return;
     }
     if (e.target.dataset?.it) { f.split.items[+e.target.dataset.i][e.target.dataset.it] = e.target.value; updateShares(); saveDraft(); return; }
+    if (e.target.dataset?.pa) { f.payerAmt[e.target.dataset.pa] = e.target.value; updateShares(); saveDraft(); return; }
     if (e.target.name === 'members' || e.target.dataset?.f === 'all' || e.target.dataset?.f === 'none') membersTouched = true;
     const before = snap;
     const prevDate = f.date;
@@ -1057,6 +1114,7 @@ function renderBillForm(editId, params = {}) {
     if (before !== snap) renderSplitRows(); else updateShares();
     if (prevDate !== f.date && !rateEditing) renderRate();
     if (e.type === 'change' && e.target.name === 'title' && !editId) applyPlace(f.title);
+    if (e.target.name === 'payers') renderPayerAmts();
     saveDraft();
   }
   let draftTimer = null;
@@ -1065,7 +1123,7 @@ function renderBillForm(editId, params = {}) {
     clearTimeout(draftTimer);
     draftTimer = setTimeout(() => {
       if (!(f.title || String(f.amount).trim() || f.note)) return;
-      const keep = ['date', 'meal', 'title', 'currency', 'amount', 'payer', 'method', 'split', 'note', 'rate', 'rateSource'];
+      const keep = ['date', 'meal', 'title', 'currency', 'amount', 'payer', 'multiPay', 'payerIds', 'payerAmt', 'method', 'split', 'note', 'rate', 'rateSource'];
       writeLS(DRAFT_KEY(), { at: Date.now(), f: clone(Object.fromEntries(keep.map((k) => [k, f[k]]))) });
     }, 400);
   }
@@ -1106,6 +1164,13 @@ function renderBillForm(editId, params = {}) {
     if (act === 'addMember') addMemberHere(b.dataset.where);
     if (act === 'rmPhoto') { (b.dataset.k === 'old' ? f.photos : f.newPhotos).splice(+b.dataset.i, 1); if (!f.newPhotos.length) f.ocrSrc = null; renderPhotos(); }
     if (act === 'ocr') runOcr();
+    if (act === 'multiPay') {
+      readForm();
+      f.multiPay = !f.multiPay;
+      if (f.multiPay) f.payerIds = f.payer ? [f.payer] : [];
+      else f.payer = f.payerIds[0] || f.payer;
+      renderPayerBox(); readForm(); updateShares(); saveDraft();
+    }
     if (act === 'addItem') { f.split.items.push({ name: '', price: '', members: [...f.split.members] }); renderSplitRows(); form.querySelector(`[data-it=name][data-i="${f.split.items.length - 1}"]`)?.focus(); saveDraft(); }
     if (act === 'rmItem') { f.split.items.splice(+b.dataset.i, 1); renderSplitRows(); saveDraft(); }
     if (act === 'itemMem') {
@@ -1133,7 +1198,7 @@ function renderBillForm(editId, params = {}) {
       const dup = D().bills.filter((b) => b.kind !== 'carry' && b.date === bill.date && b.currency === bill.currency
         && (Math.abs(b.amount - bill.amount) <= Math.max(1, bill.amount * 0.02) || (normTitle(bill.title) && normTitle(b.title) === normTitle(bill.title))));
       if (dup.length) {
-        const list = dup.map((b) => `· ${b.title || t('未命名')}  ${moneyText(b.amount, b.currency)}  ${t('{payer} 付', { payer: mem(b.payer).name })}${b.createdBy ? '  ' + t('由 {name} 记录 · ', { name: mem(b.createdBy).name }).replace(/ · $/, '') : ''}`).join('\n');
+        const list = dup.map((b) => `· ${b.title || t('未命名')}  ${moneyText(b.amount, b.currency)}  ${t('{payer} 付', { payer: C.payersOf(b).map((q) => ((x) => mem(x).name)(q.id)).join('、') })}${b.createdBy ? '  ' + t('由 {name} 记录 · ', { name: mem(b.createdBy).name }).replace(/ · $/, '') : ''}`).join('\n');
         if (!confirm(t('这笔可能已经有人记过了：') + '\n' + list + '\n\n' + t('仍然要保存吗？'))) return;
       }
     }
@@ -1162,6 +1227,7 @@ function renderBillForm(editId, params = {}) {
     if (ok) { if (useDraft) localStorage.removeItem(DRAFT_KEY()); location.hash = '#/bills'; }
   });
 
+  renderPayerBox();
   readForm();
   snap = snapshot();
   renderSplitRows();
@@ -1574,7 +1640,7 @@ function editMember(id, onSaved) {
   const d = D();
   const m = id ? d.members.find((x) => x.id === id) : { id: '', name: '', short: '', inactive: false };
   if (!m) return;
-  const used = id && (d.bills.some((b) => b.payer === id || b.split.members.includes(id)) || d.payments.some((p) => p.from === id || p.to === id));
+  const used = id && (d.bills.some((b) => C.payersOf(b).some((q) => q.id === id) || b.split.members.includes(id)) || d.payments.some((p) => p.from === id || p.to === id));
   let avatar = avatarOk(m.avatar) ? m.avatar : '';
   const qr = { ...(m.qr || {}) }, qrNew = {};
   const avPreview = () => `<span class="av av-lg${avatar ? ' has-img' : ''}" style="--c:${m.color || (id ? color(id) : PALETTE[d.members.length % PALETTE.length])}">${avatar ? `<img src="${avatar}" alt="">` : esc(m.short || m.name.slice(0, 2) || '?')}</span>`;
@@ -1670,7 +1736,7 @@ function toCSV() {
   const sorted = [...d.bills].sort((a, b) => (a.date < b.date ? -1 : 1));
   for (const b of sorted) {
     const sh = C.sharesOf(b);
-    lines.push([t(b.kind === 'carry' ? '期初结转' : '消费'), b.date, t(b.meal || ''), b.title || '', b.currency, b.amount, mem(b.payer).name, t(b.method || ''),
+    lines.push([t(b.kind === 'carry' ? '期初结转' : '消费'), b.date, t(b.meal || ''), b.title || '', b.currency, b.amount, C.payersOf(b).map((q) => mem(q.id).name + (b.payers?.length > 1 ? ` ${roundCur(q.amt, b.currency)}` : '')).join(' / '), t(b.method || ''),
       t({ equal: '平均', amount: '指定金额', ratio: '按比例', items: '按菜分' }[b.split.mode] || '平均'),
       ...ms.map((m) => (sh[m.id] !== undefined ? roundCur(sh[m.id], b.currency) : '')), C.rateOf(b, d), b.note || ''].map(q).join(','));
   }
