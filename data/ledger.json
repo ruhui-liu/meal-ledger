@@ -1343,6 +1343,32 @@
       "createdAt": "2026-11-20T09:49:23.135Z",
       "createdBy": "rh",
       "updatedAt": "2026-11-20T09:49:23.135Z"
+    },
+    {
+      "id": "b_mwtkky4awje8",
+      "kind": "meal",
+      "date": "2026-11-24",
+      "meal": "其他",
+      "title": "claude team",
+      "currency": "JPY",
+      "amount": 24849,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "ratio",
+        "members": [
+          "rh",
+          "zq"
+        ],
+        "values": {
+          "rh": 83.3,
+          "zq": 16.7
+        }
+      },
+      "note": "",
+      "createdAt": "2026-11-23T17:58:53.617Z",
+      "createdBy": "rh",
+      "updatedAt": "2026-11-23T17:58:53.617Z"
     }
   ],
   "payments": [
@@ -1426,5 +1452,5 @@
       "creditCurrency": "JPY"
     }
   ],
-  "updatedAt": "2026-11-20T09:49:23.928Z"
+  "updatedAt": "2026-11-23T17:58:54.237Z"
 }
