@@ -1369,6 +1369,30 @@
       "createdAt": "2026-11-23T17:58:53.617Z",
       "createdBy": "rh",
       "updatedAt": "2026-11-23T17:58:53.617Z"
+    },
+    {
+      "id": "b_mwxul465i708",
+      "kind": "meal",
+      "date": "2026-11-21",
+      "meal": "午餐",
+      "title": "玖玖老火锅",
+      "currency": "JPY",
+      "amount": 16480,
+      "payer": "rh",
+      "method": "PayPay",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "t",
+          "b",
+          "m_mw3stf0yk8j3"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-26T17:50:02.330Z",
+      "createdBy": "rh",
+      "updatedAt": "2026-11-26T17:50:02.330Z"
     }
   ],
   "payments": [
@@ -1452,5 +1476,5 @@
       "creditCurrency": "JPY"
     }
   ],
-  "updatedAt": "2026-11-23T17:58:54.237Z"
+  "updatedAt": "2026-11-26T17:50:02.986Z"
 }
