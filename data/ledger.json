@@ -1393,6 +1393,29 @@
       "createdAt": "2026-11-26T17:50:02.330Z",
       "createdBy": "rh",
       "updatedAt": "2026-11-26T17:50:02.330Z"
+    },
+    {
+      "id": "b_mwxultt9n38o",
+      "kind": "meal",
+      "date": "2026-11-27",
+      "meal": "其他",
+      "title": "电影魔法师之夜",
+      "currency": "JPY",
+      "amount": 4800,
+      "payer": "rh",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "t",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-26T17:50:35.565Z",
+      "createdBy": "rh",
+      "updatedAt": "2026-11-26T17:50:35.565Z"
     }
   ],
   "payments": [
@@ -1476,5 +1499,5 @@
       "creditCurrency": "JPY"
     }
   ],
-  "updatedAt": "2026-11-26T17:50:02.986Z"
+  "updatedAt": "2026-11-26T17:50:36.267Z"
 }
