@@ -1416,6 +1416,27 @@
       "createdAt": "2026-11-26T17:50:35.565Z",
       "createdBy": "rh",
       "updatedAt": "2026-11-26T17:50:35.565Z"
+    },
+    {
+      "id": "b_mwyo8u7v9xsc",
+      "kind": "meal",
+      "date": "2026-11-27",
+      "meal": "其他",
+      "title": "Claude 席位升级",
+      "currency": "JPY",
+      "amount": 14537,
+      "payer": "rh",
+      "method": "",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-27T07:40:18.041Z",
+      "createdBy": "rh",
+      "updatedAt": "2026-11-27T07:40:18.041Z"
     }
   ],
   "payments": [
@@ -1499,5 +1520,5 @@
       "creditCurrency": "JPY"
     }
   ],
-  "updatedAt": "2026-11-26T17:50:36.267Z"
+  "updatedAt": "2026-11-27T07:40:26.462Z"
 }
