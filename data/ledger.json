@@ -1437,6 +1437,31 @@
       "createdAt": "2026-11-27T07:40:18.041Z",
       "createdBy": "rh",
       "updatedAt": "2026-11-27T07:40:18.041Z"
+    },
+    {
+      "id": "b_mwyqxrso4qzs",
+      "kind": "meal",
+      "date": "2026-11-27",
+      "meal": "晚餐",
+      "title": "烤串",
+      "currency": "JPY",
+      "amount": 6072,
+      "payer": "zq",
+      "method": "刷卡",
+      "split": {
+        "mode": "equal",
+        "members": [
+          "rh",
+          "zq"
+        ]
+      },
+      "note": "",
+      "createdAt": "2026-11-27T08:55:40.533Z",
+      "createdBy": "rh",
+      "updatedAt": "2026-11-27T08:55:40.533Z",
+      "photos": [
+        "media/receipts/mwyqxrsq37g4p.jpg"
+      ]
     }
   ],
   "payments": [
@@ -1520,5 +1545,5 @@
       "creditCurrency": "JPY"
     }
   ],
-  "updatedAt": "2026-11-27T07:40:26.462Z"
+  "updatedAt": "2026-11-27T08:55:43.694Z"
 }
